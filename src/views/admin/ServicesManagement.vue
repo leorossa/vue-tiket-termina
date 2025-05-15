@@ -38,19 +38,16 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="service in filteredServices" :key="service.serviceId">
-              <td>{{ service.serviceId }}</td>
-              <td>{{ service.serviceName }}</td>
+            <tr v-for="service in filteredServices" :key="service.ServiceId">
+              <td>{{ service.ServiceId }}</td>
+              <td>{{ service.ServiceName }}</td>
               <td>
-                <div class="admin-badge primary" v-for="obj in (service.visitObjects || []).filter(o => o.isRequire)" :key="obj.visitObjectId">
-                  {{ obj.visitObjectName }}
-                </div>
-                <span v-if="!(service.visitObjects || []).some(o => o.isRequire)">-</span>
+                <!-- Отображаем просто тире, так как данные об объектах посещения не приходят в услуге -->
+                <span>-</span>
               </td>
               <td>
-                <div class="admin-badge primary" v-for="category in (service.categoryVisitor || [])" :key="category.categoryVisitorId">
-                  {{ category.categoryVisitorName }}
-                </div>
+                <!-- Отображаем просто тире, так как данные о категориях посетителей не приходят в услуге -->
+                <span>-</span>
               </td>
               <td>
                 <div class="admin-button-group">
@@ -296,7 +293,7 @@ const filteredServices = computed(() => {
   
   const query = searchQuery.value.toLowerCase();
   return services.value.filter(service => 
-    service.serviceName.toLowerCase().includes(query)
+    service.ServiceName.toLowerCase().includes(query)
   );
 });
 
@@ -343,23 +340,19 @@ function openCreateServiceModal() {
 function editService(service) {
   // Копирование данных услуги в форму
   Object.assign(currentService, {
-    serviceId: service.serviceId,
-    serviceName: service.serviceName,
-    description: service.description || '',
-    cost: service.cost || 0,
-    activeKindId: service.activeKindId || 1,
-    isDisableEditVisitObject: service.isDisableEditVisitObject || false,
-    isDisableEditVisitor: service.isDisableEditVisitor || false,
-    isVisitObjectUseForCost: service.isVisitObjectUseForCost || false,
-    isCategoryVisitorUseForCost: service.isCategoryVisitorUseForCost || false,
-    isVisitorCountUseForCost: service.isVisitorCountUseForCost || false,
-    isUseOneCategory: service.isUseOneCategory || false,
-    isNeedVisitDate: service.isNeedVisitDate || false,
-    isNeedVisitTime: service.isNeedVisitTime || false,
+    serviceId: service.ServiceId,
+    serviceName: service.ServiceName,
+    description: service.Comment || '',
+    isVisitObjectUseForCost: service.IsVisitObjectUseForCost || false,
+    isCategoryVisitorUseForCost: service.IsCategoryVisitorUseForCost || false,
+    isVisitorCountUseForCost: service.IsVisitorCountUseForCost || false,
+    isUseOneCategory: service.IsUseOneCategory || false,
+    isNeedVisitDate: service.IsNeedVisitDate || false,
+    isNeedVisitTime: service.IsNeedVisitTime || false,
     dtBegin: service.dtBegin || '',
     dtEnd: service.dtEnd || '',
-    proCultureIdentifier: service.proCultureIdentifier || null,
-    isPROCultureChecked: service.isPROCultureChecked || false
+    proCultureIdentifier: service.ProCultureIdentifier || null,
+    isPROCultureChecked: service.ProCultureChecked || false
   });
   
   // Заполнение выбранных объектов посещения
@@ -385,6 +378,7 @@ function editService(service) {
 function confirmDeleteService(service) {
   serviceToDelete.value = service;
   showDeleteConfirmModal.value = true;
+  console.log('Подтверждение удаления услуги:', service.ServiceId, service.ServiceName);
 }
 
 async function saveService() {
