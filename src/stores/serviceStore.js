@@ -44,21 +44,24 @@ export const useServiceStore = defineStore('service', {
         console.log('Ответ API:', response);
         
         // Сохраняем полученные данные в хранилище
-        // Проверяем разные возможные структуры ответа
-        this.services = response.Services || response.services || response || [];
+        // Теперь мы точно знаем структуру ответа API
+        this.services = response.Service || [];
         
-        // Добавляем пустые массивы для объектов посещения и категорий посетителей, если их нет
-        this.services.forEach(service => {
-          service.visitObjects = service.visitObjects || service.VisitObjects || [];
-          service.categoryVisitor = service.categoryVisitor || service.CategoryVisitor || [];
-        });
+        // Добавляем пустые массивы для объектов посещения и категорий посетителей к каждой услуге
+        if (Array.isArray(this.services)) {
+          this.services.forEach(service => {
+            // Добавляем пустые массивы, если их нет
+            service.visitObjects = service.visitObjects || [];
+            service.categoryVisitor = service.categoryVisitor || [];
+          });
+        }
         
-        // Заполняем справочники, используя разные возможные имена полей
-        this.visitObjects = response.VisitObjects || response.visitObjects || [];
-        this.categoryVisitors = response.CategoryVisitors || response.categoryVisitors || [];
-        this.groupVisitObjects = response.GroupVisitObject || response.groupVisitObject || [];
-        this.groupCategoryVisitors = response.GroupCategoryVisitor || response.groupCategoryVisitor || [];
-        this.seanceGrids = response.SeanceGrid || response.seanceGrid || [];
+        // Заполняем справочники из ответа API
+        this.visitObjects = response.VisitObject || [];
+        this.categoryVisitors = response.ObjectCategoryVisitor || [];
+        this.groupVisitObjects = response.GroupVisitObject || [];
+        this.groupCategoryVisitors = response.GroupCategoryVisitor || [];
+        this.seanceGrids = response.SeanceGrid || [];
         
         console.log('Услуги загружены:', this.services);
       } catch (error) {
