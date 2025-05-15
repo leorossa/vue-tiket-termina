@@ -44,17 +44,28 @@ export const useServiceStore = defineStore('service', {
         console.log('Ответ API:', response);
         
         // Сохраняем полученные данные в хранилище
-        // Теперь мы точно знаем структуру ответа API
         this.services = response.Service || [];
         
-        // Добавляем пустые массивы для объектов посещения и категорий посетителей к каждой услуге
+        // Преобразуем данные для совместимости с фронтендом
         if (Array.isArray(this.services)) {
           this.services.forEach(service => {
             // Добавляем пустые массивы, если их нет
             service.visitObjects = service.visitObjects || [];
             service.categoryVisitor = service.categoryVisitor || [];
+            
+            // Убедимся, что стоимость отображается как число
+            if (service.Cost !== undefined) {
+              service.Cost = parseFloat(service.Cost);
+            }
+            
+            // Добавляем поле Description, если есть только Comment
+            if (!service.Description && service.Comment) {
+              service.Description = service.Comment;
+            }
           });
         }
+        
+        console.log('Загруженные услуги с преобразованиями:', this.services);
         
         // Заполняем справочники из ответа API
         this.visitObjects = response.VisitObject || [];
@@ -78,7 +89,12 @@ export const useServiceStore = defineStore('service', {
       this.error = null;
       
       try {
-        await createService(serviceData);
+        console.log('Отправка данных для создания услуги:', serviceData);
+        
+        // Удаляем ServiceId из данных, если он есть, т.к. при создании он не нужен
+        const { ServiceId, ...createData } = serviceData;
+        
+        await createService(createData);
         
         // Обновляем список услуг после создания
         await this.fetchServices();
