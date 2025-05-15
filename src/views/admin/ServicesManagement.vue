@@ -42,13 +42,13 @@
               <td>{{ service.serviceId }}</td>
               <td>{{ service.serviceName }}</td>
               <td>
-                <div class="admin-badge primary" v-for="obj in service.visitObjects.filter(o => o.isRequire)" :key="obj.visitObjectId">
+                <div class="admin-badge primary" v-for="obj in (service.visitObjects || []).filter(o => o.isRequire)" :key="obj.visitObjectId">
                   {{ obj.visitObjectName }}
                 </div>
-                <span v-if="!service.visitObjects.some(o => o.isRequire)">-</span>
+                <span v-if="!(service.visitObjects || []).some(o => o.isRequire)">-</span>
               </td>
               <td>
-                <div class="admin-badge primary" v-for="category in service.categoryVisitor" :key="category.categoryVisitorId">
+                <div class="admin-badge primary" v-for="category in (service.categoryVisitor || [])" :key="category.categoryVisitorId">
                   {{ category.categoryVisitorName }}
                 </div>
               </td>

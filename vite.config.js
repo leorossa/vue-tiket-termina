@@ -16,7 +16,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8181', // Адрес бэкенда
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '') // Удаление префикса /api из пути
+        rewrite: (path) => path.replace(/^\/api/, '/TLMuseumGate/REST') // Замена префикса /api на контекстный путь бэкенда
       }
     }
   }

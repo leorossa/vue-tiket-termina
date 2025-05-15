@@ -41,14 +41,24 @@ export const useServiceStore = defineStore('service', {
       
       try {
         const response = await getEditableServices();
+        console.log('Ответ API:', response);
         
-        // Сохраняем данные в хранилище
-        this.services = response.Service || [];
-        this.visitObjects = response.VisitObject || [];
-        this.categoryVisitors = response.CategoryVisitor || [];
-        this.groupVisitObjects = response.GroupVisitObject || [];
-        this.groupCategoryVisitors = response.GroupCategoryVisitor || [];
-        this.seanceGrids = response.SeanceGrid || [];
+        // Сохраняем полученные данные в хранилище
+        // Проверяем разные возможные структуры ответа
+        this.services = response.Services || response.services || response || [];
+        
+        // Добавляем пустые массивы для объектов посещения и категорий посетителей, если их нет
+        this.services.forEach(service => {
+          service.visitObjects = service.visitObjects || service.VisitObjects || [];
+          service.categoryVisitor = service.categoryVisitor || service.CategoryVisitor || [];
+        });
+        
+        // Заполняем справочники, используя разные возможные имена полей
+        this.visitObjects = response.VisitObjects || response.visitObjects || [];
+        this.categoryVisitors = response.CategoryVisitors || response.categoryVisitors || [];
+        this.groupVisitObjects = response.GroupVisitObject || response.groupVisitObject || [];
+        this.groupCategoryVisitors = response.GroupCategoryVisitor || response.groupCategoryVisitor || [];
+        this.seanceGrids = response.SeanceGrid || response.seanceGrid || [];
         
         console.log('Услуги загружены:', this.services);
       } catch (error) {
