@@ -32,8 +32,8 @@
             <tr>
               <th>ID</th>
               <th>Название</th>
-              <th>Объекты посещения</th>
-              <th>Категории посетителей</th>
+              <th>Описание</th>
+              <th>Стоимость</th>
               <th>Действия</th>
             </tr>
           </thead>
@@ -41,14 +41,8 @@
             <tr v-for="service in filteredServices" :key="service.ServiceId">
               <td>{{ service.ServiceId }}</td>
               <td>{{ service.ServiceName }}</td>
-              <td>
-                <!-- Отображаем просто тире, так как данные об объектах посещения не приходят в услуге -->
-                <span>-</span>
-              </td>
-              <td>
-                <!-- Отображаем просто тире, так как данные о категориях посетителей не приходят в услуге -->
-                <span>-</span>
-              </td>
+              <td>{{ service.Comment || '-' }}</td>
+              <td>{{ service.Cost || '-' }}</td>
               <td>
                 <div class="admin-button-group">
                   <button @click="editService(service)" class="admin-button secondary">
@@ -97,6 +91,19 @@
                 class="admin-textarea"
               ></textarea>
             </div>
+            
+            <div class="admin-form-group">
+              <label for="serviceCost">Стоимость:</label>
+              <input
+                id="serviceCost"
+                v-model="currentService.cost"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                class="admin-input"
+              />
+            </div>
 
             <!-- Настройки услуги -->
             <div class="admin-form-group">
@@ -126,6 +133,31 @@
                   <input type="checkbox" v-model="currentService.isUseOneCategory" class="admin-checkbox" />
                   <span>Использовать только одну категорию</span>
                 </label>
+              </div>
+            </div>
+
+            <!-- Период действия услуги -->
+            <div class="admin-form-group">
+              <label>Период действия услуги:</label>
+              <div class="d-flex gap-2">
+                <div class="flex-grow-1">
+                  <label for="dtBegin">Дата начала:</label>
+                  <input 
+                    id="dtBegin" 
+                    v-model="currentService.dtBegin" 
+                    type="date" 
+                    class="admin-input"
+                  />
+                </div>
+                <div class="flex-grow-1">
+                  <label for="dtEnd">Дата окончания:</label>
+                  <input 
+                    id="dtEnd" 
+                    v-model="currentService.dtEnd" 
+                    type="date" 
+                    class="admin-input"
+                  />
+                </div>
               </div>
             </div>
 
@@ -180,31 +212,6 @@
                 <p>Нет доступных категорий посетителей</p>
               </div>
             </div>
-
-            <!-- Период действия -->
-            <div class="admin-form-group">
-              <label>Период действия:</label>
-              <div class="admin-form-grid">
-                <div class="admin-form-group">
-                  <label for="dtBegin">Дата начала:</label>
-                  <input
-                    id="dtBegin"
-                    type="datetime-local"
-                    v-model="currentService.dtBegin"
-                    class="admin-input"
-                  />
-                </div>
-                <div class="admin-form-group">
-                  <label for="dtEnd">Дата окончания:</label>
-                  <input
-                    id="dtEnd"
-                    type="datetime-local"
-                    v-model="currentService.dtEnd"
-                    class="admin-input"
-                  />
-                </div>
-              </div>
-            </div>
           </form>
         </div>
         <div class="admin-modal-footer">
@@ -241,25 +248,48 @@ import { useServiceStore } from '@/stores/serviceStore';
 // Инициализация хранилища услуг
 const serviceStore = useServiceStore();
 
-// Локальное состояние компонента
+// Инициализация состояния компонента
 const searchQuery = ref('');
 const showServiceModal = ref(false);
 const showDeleteConfirmModal = ref(false);
 const isEditing = ref(false);
 const serviceToDelete = ref(null);
 
-// Текущая редактируемая услуга
+// Функция форматирования даты для инпута типа date
+function formatDateForInput(dateString) {
+  if (!dateString) return '';
+  
+  // Если дата уже в формате YYYY-MM-DD, вернуть как есть
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return dateString;
+  }
+  
+  // Попытка преобразовать в формат YYYY-MM-DD
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch (e) {
+    console.error('Ошибка при преобразовании даты:', e);
+    return '';
+  }
+}
+
+// Данные текущей услуги для формы
 const currentService = reactive({
   serviceId: null,
   serviceName: '',
   description: '',
   cost: 0,
-  activeKindId: 1, // Значение по умолчанию
-  isDisableEditVisitObject: false,
-  isDisableEditVisitor: false,
-  isVisitObjectUseForCost: false,
-  isCategoryVisitorUseForCost: false,
-  isVisitorCountUseForCost: false,
+  activeKindId: 1,
+  isVisitObjectUseForCost: true,
+  isCategoryVisitorUseForCost: true,
+  isVisitorCountUseForCost: true,
   isUseOneCategory: false,
   isNeedVisitDate: false,
   isNeedVisitTime: false,
@@ -315,11 +345,9 @@ function openCreateServiceModal() {
     description: '',
     cost: 0,
     activeKindId: 1,
-    isDisableEditVisitObject: false,
-    isDisableEditVisitor: false,
-    isVisitObjectUseForCost: false,
-    isCategoryVisitorUseForCost: false,
-    isVisitorCountUseForCost: false,
+    isVisitObjectUseForCost: true,
+    isCategoryVisitorUseForCost: true,
+    isVisitorCountUseForCost: true,
     isUseOneCategory: false,
     isNeedVisitDate: false,
     isNeedVisitTime: false,
@@ -343,14 +371,16 @@ function editService(service) {
     serviceId: service.ServiceId,
     serviceName: service.ServiceName,
     description: service.Comment || '',
+    cost: service.Cost || 0,
+    activeKindId: service.ActiveKindId || 1,
     isVisitObjectUseForCost: service.IsVisitObjectUseForCost || false,
     isCategoryVisitorUseForCost: service.IsCategoryVisitorUseForCost || false,
     isVisitorCountUseForCost: service.IsVisitorCountUseForCost || false,
     isUseOneCategory: service.IsUseOneCategory || false,
     isNeedVisitDate: service.IsNeedVisitDate || false,
     isNeedVisitTime: service.IsNeedVisitTime || false,
-    dtBegin: service.dtBegin || '',
-    dtEnd: service.dtEnd || '',
+    dtBegin: formatDateForInput(service.dtBegin) || '',
+    dtEnd: formatDateForInput(service.dtEnd) || '',
     proCultureIdentifier: service.ProCultureIdentifier || null,
     isPROCultureChecked: service.ProCultureChecked || false
   });
@@ -385,24 +415,21 @@ async function saveService() {
   try {
     // Подготовка данных для сохранения
     const serviceData = {
-      ...currentService,
-      // Преобразуем выбранные объекты и категории в формат, ожидаемый API
-      visitObjects: availableData.value.visitObjects
-        .filter(obj => selectedVisitObjects.value.includes(obj.visitObjectId))
-        .map(obj => ({
-          visitObjectId: obj.visitObjectId,
-          isRequire: true
-        })),
-      categoryVisitor: availableData.value.categoryVisitor
-        .filter(cat => selectedCategories.value.includes(cat.categoryVisitorId))
-        .map(cat => ({
-          categoryVisitorId: cat.categoryVisitorId,
-          categoryVisitorName: cat.categoryVisitorName
-        })),
-      prices: selectedCategories.value.map(catId => ({
-        categoryVisitorId: catId,
-        price: parseFloat(categoryPrices.value[catId] || 0)
-      }))
+      ServiceId: currentService.serviceId,
+      ServiceName: currentService.serviceName,
+      Comment: currentService.description,
+      Cost: parseFloat(currentService.cost),
+      ActiveKindId: currentService.activeKindId,
+      IsVisitObjectUseForCost: currentService.isVisitObjectUseForCost,
+      IsCategoryVisitorUseForCost: currentService.isCategoryVisitorUseForCost,
+      IsVisitorCountUseForCost: currentService.isVisitorCountUseForCost,
+      IsUseOneCategory: currentService.isUseOneCategory,
+      IsNeedVisitDate: currentService.isNeedVisitDate,
+      IsNeedVisitTime: currentService.isNeedVisitTime,
+      dtBegin: currentService.dtBegin,
+      dtEnd: currentService.dtEnd,
+      ProCultureIdentifier: currentService.proCultureIdentifier,
+      ProCultureChecked: currentService.isPROCultureChecked
     };
     
     let result;
