@@ -1,155 +1,345 @@
-/* src/assets/styles/admin.css */
+/* Стили для административной панели */
 
-/* Container for admin pages */
+:root {
+  --admin-primary-color: #3b82f6;
+  --admin-secondary-color: #1e40af;
+  --admin-success-color: #10b981;
+  --admin-warning-color: #f59e0b;
+  --admin-danger-color: #ef4444;
+  --admin-text-primary: #1f2937;
+  --admin-text-secondary: #4b5563;
+  --admin-text-light: #9ca3af;
+  --admin-bg-primary: #ffffff;
+  --admin-bg-secondary: #f3f4f6;
+  --admin-bg-tertiary: #e5e7eb;
+  --admin-border-color: #d1d5db;
+  --admin-border-radius: 8px;
+  --admin-border-radius-sm: 4px;
+  --admin-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --admin-transition: all 0.3s ease;
+}
+
+/* Основные контейнеры */
 .admin-container {
-  max-width: 1100px; /* Slightly wider for admin dashboards */
-  margin: 2em auto;
-  padding: 1.5em 2em;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem;
 }
 
 .admin-section-title {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  color: #374151; /* Tailwind's gray-700 */
+  color: var(--admin-text-primary);
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e7eb; /* Tailwind's gray-200 */
+  border-bottom: 2px solid var(--admin-primary-color);
 }
 
-.admin-error-message {
-  color: #ef4444; /* Tailwind's red-500 */
-  background-color: #fee2e2; /* Tailwind's red-100 */
-  border: 1px solid #fca5a5; /* Tailwind's red-300 */
-  padding: 0.75rem 1rem;
-  border-radius: 0.375rem;
-  margin: 1em 0;
-}
-
-/* Basic Admin Table Styling */
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1.5em;
-  margin-bottom: 1.5em;
-  font-size: 0.9rem;
-}
-
-.admin-table th,
-.admin-table td {
-  border: 1px solid #e5e7eb; /* Tailwind's gray-200 */
-  padding: 0.75em 1em;
-  text-align: left;
-  color: #374151; /* Tailwind's gray-700 */
-}
-
-.admin-table thead th {
-  background-color: #f9fafb; /* Tailwind's gray-50 */
-  font-weight: 600;
-  color: #111827; /* Tailwind's gray-900 */
-}
-
-.admin-table tbody tr:nth-child(even) {
-  background-color: #f9fafb;
-}
-
-.admin-table tbody tr:hover {
-  background-color: #f3f4f6; /* Tailwind's gray-100 */
-}
-
-/* Admin Form Styling (basic) */
-.admin-form-group {
+.admin-card {
+  background-color: var(--admin-bg-primary);
+  border-radius: var(--admin-border-radius);
+  box-shadow: var(--admin-shadow);
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+/* Формы и элементы управления */
+.admin-form-group {
+  margin-bottom: 1rem;
 }
 
 .admin-form-group label {
   display: block;
-  margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #374151;
+  margin-bottom: 0.5rem;
+  color: var(--admin-text-primary);
 }
 
 .admin-input,
 .admin-select,
 .admin-textarea {
   width: 100%;
-  padding: 0.65em 0.75em;
-  border: 1px solid #d1d5db; /* Tailwind's gray-300 */
-  border-radius: 0.375rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  padding: 0.75rem;
+  border: 1px solid var(--admin-border-color);
+  border-radius: var(--admin-border-radius-sm);
+  background-color: var(--admin-bg-primary);
+  color: var(--admin-text-primary);
+  font-size: 1rem;
+  transition: var(--admin-transition);
 }
 
 .admin-input:focus,
 .admin-select:focus,
 .admin-textarea:focus {
   outline: none;
-  border-color: #3b82f6; /* Tailwind's blue-500 */
+  border-color: var(--admin-primary-color);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
+.admin-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.admin-checkbox,
+.admin-radio {
+  margin-right: 0.5rem;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+/* Кнопки */
 .admin-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.65em 1.25em;
-  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--admin-border-radius-sm);
   font-weight: 500;
-  color: white;
-  background-color: #3b82f6; /* Tailwind's blue-500 */
-  border: none;
-  border-radius: 0.375rem;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
+  transition: var(--admin-transition);
+  border: none;
+  font-size: 0.875rem;
+  min-height: 2.5rem;
 }
 
-.admin-button:hover {
-  background-color: #2563eb; /* Tailwind's blue-600 */
+.admin-button.primary {
+  background-color: var(--admin-primary-color);
+  color: white;
+}
+
+.admin-button.primary:hover {
+  background-color: var(--admin-secondary-color);
 }
 
 .admin-button.secondary {
-  background-color: #6b7280; /* Tailwind's gray-500 */
+  background-color: var(--admin-bg-tertiary);
+  color: var(--admin-text-primary);
 }
 
 .admin-button.secondary:hover {
-  background-color: #4b5563; /* Tailwind's gray-600 */
+  background-color: var(--admin-border-color);
+}
+
+.admin-button.success {
+  background-color: var(--admin-success-color);
+  color: white;
+}
+
+.admin-button.success:hover {
+  background-color: #0d9668;
 }
 
 .admin-button.danger {
-  background-color: #ef4444; /* Tailwind's red-500 */
+  background-color: var(--admin-danger-color);
+  color: white;
 }
 
 .admin-button.danger:hover {
-  background-color: #dc2626; /* Tailwind's red-600 */
+  background-color: #dc2626;
 }
 
-/* Card style for admin sections */
-.admin-card {
-  background: #ffffff;
-  border-radius: 0.5rem; /* 8px */
-  padding: 1.5em;
-  margin-bottom: 2em;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0,0,0,0.06); /* Subtle shadow */
-  border: 1px solid #e5e7eb; /* Tailwind's gray-200 for a light border */
+.admin-button.icon {
+  padding: 0.5rem;
+  border-radius: 50%;
 }
 
-/* Modifier for buttons that are icon-only */
-.admin-button.icon-only {
-  width: 2.25rem; /* 36px */
-  height: 2.25rem; /* 36px */
-  padding: 0;
-  font-size: 1.125rem; /* Adjust icon size if needed */
-  line-height: 2.25rem; /* Vertically center icon */
-  display: inline-flex; /* Ensures proper alignment */
+.admin-button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Таблицы */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--admin-border-color);
+}
+
+.admin-table th {
+  background-color: var(--admin-bg-secondary);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.admin-table tr:hover {
+  background-color: var(--admin-bg-secondary);
+}
+
+.admin-table-responsive {
+  overflow-x: auto;
+}
+
+/* Утилиты */
+.admin-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--admin-border-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.admin-badge.primary {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--admin-primary-color);
+}
+
+.admin-badge.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--admin-success-color);
+}
+
+.admin-badge.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--admin-warning-color);
+}
+
+.admin-badge.danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--admin-danger-color);
+}
+
+/* Модальные окна */
+.admin-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 100;
 }
 
-.admin-button.icon-only.small {
-    width: 2rem; /* 32px */
-    height: 2rem; /* 32px */
-    font-size: 1rem;
-    line-height: 2rem;
+.admin-modal {
+  background-color: var(--admin-bg-primary);
+  border-radius: var(--admin-border-radius);
+  box-shadow: var(--admin-shadow);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.admin-modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--admin-border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin: 0;
+}
+
+.admin-modal-body {
+  padding: 1.5rem;
+}
+
+.admin-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--admin-border-color);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* Навигация */
+.admin-sidebar {
+  width: 250px;
+  background-color: var(--admin-bg-primary);
+  border-right: 1px solid var(--admin-border-color);
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.admin-sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--admin-border-color);
+}
+
+.admin-sidebar-menu {
+  padding: 1rem 0;
+}
+
+.admin-sidebar-item {
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  color: var(--admin-text-secondary);
+  text-decoration: none;
+  transition: var(--admin-transition);
+}
+
+.admin-sidebar-item:hover,
+.admin-sidebar-item.active {
+  background-color: var(--admin-bg-secondary);
+  color: var(--admin-primary-color);
+}
+
+.admin-sidebar-icon {
+  margin-right: 0.75rem;
+}
+
+.admin-main {
+  margin-left: 250px;
+  padding: 1.5rem;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background-color: var(--admin-bg-primary);
+  border-bottom: 1px solid var(--admin-border-color);
+}
+
+.admin-header-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin: 0;
+}
+
+.admin-user-menu {
+  position: relative;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  
+  .admin-main {
+    margin-left: 0;
+  }
+  
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
 }

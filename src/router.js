@@ -1,35 +1,104 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import TerminalHome from './views/TerminalHome.vue';
-import TerminalService from './views/TerminalService.vue';
-import TerminalCart from './views/TerminalCart.vue';
-import TerminalSuccess from './views/TerminalSuccess.vue';
-import AdminLogin from './views/AdminLogin.vue';
-import AdminDashboard from './views/AdminDashboard.vue';
-import AdminServices from './views/AdminServices.vue';
-import AdminOrders from './views/AdminOrders.vue';
-import AdminReports from './views/AdminReports.vue';
-import AdminSettings from './views/AdminSettings.vue';
-import AdminShifts from './views/AdminShifts.vue';
 
+// Импорт компонентов админ-панели
+import AdminLayout from '@/views/admin/AdminLayout.vue';
+import ServicesManagement from '@/views/admin/ServicesManagement.vue';
+import UsersManagement from '@/views/admin/UsersManagement.vue';
+import Dashboard from '@/views/admin/Dashboard.vue';
+import Settings from '@/views/admin/Settings.vue';
+import Login from '@/views/Login.vue';
+
+// Импорт хранилища аутентификации
+import { useAuthStore } from '@/stores/authStore';
+
+// Определение маршрутов
 const routes = [
-  // Терминал
-  { path: '/terminal', name: 'TerminalHome', component: TerminalHome },
-  { path: '/terminal/service/:id', name: 'TerminalService', component: TerminalService },
-  { path: '/terminal/cart', name: 'TerminalCart', component: TerminalCart },
-  { path: '/terminal/success', name: 'TerminalSuccess', component: TerminalSuccess },
-  // Админка
-  { path: '/login', name: 'AdminLogin', component: AdminLogin },
-  { path: '/', name: 'AdminDashboard', component: AdminDashboard },
-  { path: '/services', name: 'AdminServices', component: AdminServices },
-  { path: '/shifts', name: 'AdminShifts', component: AdminShifts },
-  { path: '/orders', name: 'AdminOrders', component: AdminOrders },
-  { path: '/reports', name: 'AdminReports', component: AdminReports },
-  { path: '/settings', name: 'AdminSettings', component: AdminSettings },
+  // Маршрут для страницы входа
+  {
+    path: '/login',
+    name: 'login',
+    component: Login,
+    meta: { requiresAuth: false }
+  },
+  
+  // Маршруты админ-панели
+  {
+    path: '/admin',
+    component: AdminLayout,
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        redirect: '/admin/dashboard'
+      },
+      {
+        path: 'dashboard',
+        name: 'admin-dashboard',
+        component: Dashboard,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'services',
+        name: 'admin-services',
+        component: ServicesManagement,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'users',
+        name: 'admin-users',
+        component: UsersManagement,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'settings',
+        name: 'admin-settings',
+        component: Settings,
+        meta: { requiresAuth: true }
+      },
+      // Здесь будут другие маршруты админ-панели
+    ]
+  },
+  // Перенаправление на админ-панель по умолчанию
+  {
+    path: '/',
+    redirect: '/admin'
+  },
+  
+  // Перенаправление на страницу входа для всех несуществующих маршрутов
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/login'
+  }
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+// Защита маршрутов с проверкой аутентификации
+router.beforeEach(async (to, from, next) => {
+  // Проверяем, требуется ли аутентификация для маршрута
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  
+  if (requiresAuth) {
+    // Получаем хранилище аутентификации
+    const authStore = useAuthStore();
+    
+    // Проверяем состояние аутентификации
+    const isAuthenticated = await authStore.checkAuth();
+    
+    if (isAuthenticated) {
+      // Если пользователь авторизован, пропускаем его
+      next();
+    } else {
+      // Если не авторизован, перенаправляем на страницу входа
+      next({ path: '/login', query: { redirect: to.fullPath } });
+    }
+  } else {
+    // Если маршрут не требует аутентификации, пропускаем
+    next();
+  }
 });
 
 export default router;
