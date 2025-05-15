@@ -2,7 +2,7 @@
   <div class="admin-container admin-dashboard-layout">
     <h1 class="admin-main-title">Панель управления</h1>
 
-    <!-- Секция статуса и управления -->
+    <!-- Секция статуса и управления 
     <div class="admin-card status-management-card">
       <h2 class="admin-section-title">Статус системы и управление</h2>
       <div class="api-mode-switcher">
@@ -25,7 +25,7 @@
       <div class="system-stats">
         <p>Общая статистика системы (в разработке)...</p>
       </div>
-    </div>
+    </div>-->
 
     <!-- Секция основных разделов навигации -->
     <div class="admin-card navigation-links-card">
