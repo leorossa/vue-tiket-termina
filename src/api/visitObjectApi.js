@@ -36,10 +36,19 @@ export const getVisitObjects = async () => {
  */
 export async function getVisitObjectById(visitObjectId) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/VisitObject/${visitObjectId}`, {
+    // Получаем все объекты и ищем нужный по ID
+    const response = await axios.get(`${API_BASE_URL}/VisitObject`, {
       headers: getAuthHeaders()
     });
-    return response.data;
+    
+    // Ищем объект по ID в полученных данных
+    const visitObject = response.data.find(obj => obj.VisitObjectId === visitObjectId);
+    
+    if (!visitObject) {
+      throw new Error(`Объект посещения с ID ${visitObjectId} не найден`);
+    }
+    
+    return visitObject;
   } catch (error) {
     console.error(`Ошибка при получении объекта посещения с ID ${visitObjectId}:`, error);
     throw error;
@@ -53,6 +62,7 @@ export async function getVisitObjectById(visitObjectId) {
  */
 export async function createVisitObject(visitObjectData) {
   try {
+    // Согласно скриншоту, отправляем POST запрос на /VisitObject/Create
     const response = await axios.post(`${API_BASE_URL}/VisitObject/Create`, visitObjectData, {
       headers: getAuthHeaders()
     });
@@ -71,6 +81,7 @@ export async function createVisitObject(visitObjectData) {
  */
 export async function updateVisitObject(visitObjectId, visitObjectData) {
   try {
+    // Согласно скриншоту, отправляем PUT запрос на /VisitObject/Update/{id}
     const response = await axios.put(`${API_BASE_URL}/VisitObject/Update/${visitObjectId}`, visitObjectData, {
       headers: getAuthHeaders()
     });

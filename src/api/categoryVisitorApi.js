@@ -36,10 +36,19 @@ export const getCategoryVisitors = async () => {
  */
 export async function getCategoryVisitorById(id) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/CategoryVisitors/${id}`, {
+    // Получаем все категории и ищем нужную по ID
+    const response = await axios.get(`${API_BASE_URL}/CategoryVisitors`, {
       headers: getAuthHeaders()
     });
-    return response.data;
+    
+    // Ищем категорию по ID в полученных данных
+    const categoryVisitor = response.data.find(cat => cat.CategoryVisitorId === id);
+    
+    if (!categoryVisitor) {
+      throw new Error(`Категория посетителей с ID ${id} не найдена`);
+    }
+    
+    return categoryVisitor;
   } catch (error) {
     console.error(`Ошибка при получении категории посетителей с ID ${id}:`, error);
     throw error;
@@ -53,6 +62,7 @@ export async function getCategoryVisitorById(id) {
  */
 export async function createCategoryVisitor(categoryData) {
   try {
+    // Согласно скриншоту, отправляем POST запрос на /CategoryVisitors/Create
     const response = await axios.post(`${API_BASE_URL}/CategoryVisitors/Create`, categoryData, {
       headers: getAuthHeaders()
     });
@@ -71,6 +81,7 @@ export async function createCategoryVisitor(categoryData) {
  */
 export async function updateCategoryVisitor(id, categoryData) {
   try {
+    // Согласно скриншоту, отправляем PUT запрос на /CategoryVisitors/Update/{id}
     const response = await axios.put(`${API_BASE_URL}/CategoryVisitors/Update/${id}`, categoryData, {
       headers: getAuthHeaders()
     });

@@ -50,10 +50,24 @@ export async function getSimpleServices() {
  */
 export async function getServiceById(serviceId) {
   try {
-    const response = await axios.get(`${API_BASE_URL}/Service/${serviceId}`, {
+    // Здесь мы используем запрос к Editable, так как отдельного эндпоинта для получения одной услуги нет
+    const response = await axios.get(`${API_BASE_URL}/Service/Editable`, {
       headers: getAuthHeaders()
     });
-    return response.data;
+    
+    // Ищем услугу по ID в полученных данных
+    const service = response.data.Service.find(s => s.ServiceId === serviceId);
+    
+    if (!service) {
+      throw new Error(`Услуга с ID ${serviceId} не найдена`);
+    }
+    
+    // Добавляем связанные объекты и категории
+    service.VisitObject = response.data.VisitObject || [];
+    service.CategoryVisitor = response.data.CategoryVisitor || [];
+    service.Price = response.data.Price || [];
+    
+    return service;
   } catch (error) {
     console.error(`Ошибка при получении услуги с ID ${serviceId}:`, error);
     throw error;
@@ -67,33 +81,11 @@ export async function getServiceById(serviceId) {
  */
 export async function createService(serviceData) {
   try {
-    // Подготовка данных для отправки
-    const serviceDto = prepareServiceDto(serviceData);
-    
     // Отправка запроса на создание услуги
-    const response = await axios.post(`${API_BASE_URL}/Service/Create`, serviceDto, {
+    // Согласно скриншоту, мы отправляем весь объект сразу с вложенными объектами
+    const response = await axios.post(`${API_BASE_URL}/Service/Create`, serviceData, {
       headers: getAuthHeaders()
     });
-    
-    // Если услуга создана успешно и есть связанные объекты, обновляем их
-    if (response.data && response.data.ServiceId) {
-      const serviceId = response.data.ServiceId;
-      
-      // Обновляем связи с объектами посещения
-      if (serviceData.VisitObject && serviceData.VisitObject.length > 0) {
-        await updateServiceVisitObjects(serviceId, serviceData.VisitObject);
-      }
-      
-      // Обновляем связи с категориями посетителей
-      if (serviceData.CategoryVisitor && serviceData.CategoryVisitor.length > 0) {
-        await updateServiceCategoryVisitors(serviceId, serviceData.CategoryVisitor);
-      }
-      
-      // Обновляем цены
-      if (serviceData.Price && serviceData.Price.length > 0) {
-        await updateServicePrices(serviceId, serviceData.Price);
-      }
-    }
     
     return response.data;
   } catch (error) {
@@ -109,33 +101,16 @@ export async function createService(serviceData) {
  */
 export async function updateService(serviceData) {
   try {
-    // Подготовка данных для отправки
-    const serviceDto = prepareServiceDto(serviceData);
+    // Согласно скриншоту, мы должны отправить PUT запрос на /Service/Update/{id}
+    const serviceId = serviceData.ServiceId;
+    if (!serviceId) {
+      throw new Error('Отсутствует ID услуги для обновления');
+    }
     
     // Отправка запроса на обновление услуги
-    const response = await axios.put(`${API_BASE_URL}/Service/Update`, serviceDto, {
+    const response = await axios.put(`${API_BASE_URL}/Service/Update/${serviceId}`, serviceData, {
       headers: getAuthHeaders()
     });
-    
-    // Если услуга обновлена успешно, обновляем связанные объекты
-    if (response.data) {
-      const serviceId = serviceData.ServiceId;
-      
-      // Обновляем связи с объектами посещения
-      if (serviceData.VisitObject && serviceData.VisitObject.length > 0) {
-        await updateServiceVisitObjects(serviceId, serviceData.VisitObject);
-      }
-      
-      // Обновляем связи с категориями посетителей
-      if (serviceData.CategoryVisitor && serviceData.CategoryVisitor.length > 0) {
-        await updateServiceCategoryVisitors(serviceId, serviceData.CategoryVisitor);
-      }
-      
-      // Обновляем цены
-      if (serviceData.Price && serviceData.Price.length > 0) {
-        await updateServicePrices(serviceId, serviceData.Price);
-      }
-    }
     
     return response.data;
   } catch (error) {
