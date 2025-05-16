@@ -13,6 +13,14 @@
           <i class="admin-sidebar-icon">🎫</i>
           <span>Услуги</span>
         </router-link>
+        <router-link to="/admin/category-visitors" class="admin-sidebar-item">
+          <i class="admin-sidebar-icon">👪</i>
+          <span>Категории посетителей</span>
+        </router-link>
+        <router-link to="/admin/visit-objects" class="admin-sidebar-item">
+          <i class="admin-sidebar-icon">🏢</i>
+          <span>Объекты посещения</span>
+        </router-link>
         <router-link to="/admin/users" class="admin-sidebar-item">
           <i class="admin-sidebar-icon">👥</i>
           <span>Пользователи</span>
@@ -63,6 +71,8 @@ const pageTitle = computed(() => {
   const routeTitles = {
     '/admin/dashboard': 'Дашборд',
     '/admin/services': 'Управление услугами',
+    '/admin/category-visitors': 'Управление категориями посетителей',
+    '/admin/visit-objects': 'Управление объектами посещения',
     '/admin/users': 'Управление пользователями',
     '/admin/settings': 'Настройки системы'
   };

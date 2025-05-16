@@ -77,3 +77,20 @@ export const updateService = async (id, serviceData) => {
     throw error;
   }
 };
+
+/**
+ * Удаление услуги
+ * @param {Number} id ID услуги для удаления
+ * @returns {Promise} Промис с результатом операции
+ */
+export const deleteService = async (id) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/Service/Delete/${id}`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Ошибка при удалении услуги с ID ${id}:`, error);
+    throw error;
+  }
+};

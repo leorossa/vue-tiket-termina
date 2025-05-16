@@ -6,6 +6,8 @@ import ServicesManagement from '@/views/admin/ServicesManagement.vue';
 import UsersManagement from '@/views/admin/UsersManagement.vue';
 import Dashboard from '@/views/admin/Dashboard.vue';
 import Settings from '@/views/admin/Settings.vue';
+import CategoryVisitorManagement from '@/views/admin/CategoryVisitorManagement.vue';
+import VisitObjectManagement from '@/views/admin/VisitObjectManagement.vue';
 import Login from '@/views/Login.vue';
 
 // Импорт хранилища аутентификации
@@ -55,6 +57,18 @@ const routes = [
         component: Settings,
         meta: { requiresAuth: true }
       },
+      {
+        path: 'category-visitors',
+        name: 'admin-category-visitors',
+        component: CategoryVisitorManagement,
+        meta: { requiresAuth: true }
+      },
+      {
+        path: 'visit-objects',
+        name: 'admin-visit-objects',
+        component: VisitObjectManagement,
+        meta: { requiresAuth: true }
+      }
       // Здесь будут другие маршруты админ-панели
     ]
   },

@@ -165,7 +165,9 @@ const formData = reactive({
   dtBegin: '',
   dtEnd: '',
   proCultureIdentifier: null,
-  isPROCultureChecked: false
+  isPROCultureChecked: false,
+  isDisableEditVisitObject: false,
+  isDisableEditVisitor: false
 });
 
 // Наблюдение за изменением входных данных
@@ -175,8 +177,9 @@ watch(() => props.service, (newService) => {
     Object.assign(formData, {
       serviceId: newService.ServiceId,
       serviceName: newService.ServiceName,
-      description: newService.Comment || '',
-      cost: newService.Cost || 0,
+      // Используем Description или Comment для обратной совместимости
+      description: newService.Description || newService.Comment || '',
+      cost: newService.Cost !== undefined ? parseFloat(newService.Cost) : 0,
       activeKindId: newService.ActiveKindId || 1,
       isVisitObjectUseForCost: newService.IsVisitObjectUseForCost || false,
       isCategoryVisitorUseForCost: newService.IsCategoryVisitorUseForCost || false,
@@ -187,7 +190,9 @@ watch(() => props.service, (newService) => {
       dtBegin: formatDateForInput(newService.DtBegin || newService.dtBegin) || '',
       dtEnd: formatDateForInput(newService.DtEnd || newService.dtEnd) || '',
       proCultureIdentifier: newService.ProCultureIdentifier || null,
-      isPROCultureChecked: newService.IsPROCultureChecked || newService.ProCultureChecked || false
+      isPROCultureChecked: newService.IsPROCultureChecked || newService.ProCultureChecked || false,
+      isDisableEditVisitObject: newService.IsDisableEditVisitObject || false,
+      isDisableEditVisitor: newService.IsDisableEditVisitor || false
     });
   }
 }, { immediate: true, deep: true });
@@ -211,8 +216,8 @@ function saveService() {
       DtEnd: formData.dtEnd ? new Date(formData.dtEnd).toISOString() : null,
       ProCultureIdentifier: formData.proCultureIdentifier,
       IsPROCultureChecked: formData.isPROCultureChecked,
-      IsDisableEditVisitObject: false, // Значение по умолчанию
-      IsDisableEditVisitor: false, // Значение по умолчанию
+      IsDisableEditVisitObject: formData.isDisableEditVisitObject,
+      IsDisableEditVisitor: formData.isDisableEditVisitor,
       IsVisitObjectUseForCost: formData.isVisitObjectUseForCost,
       IsCategoryVisitorUseForCost: formData.isCategoryVisitorUseForCost,
       IsVisitorCountUseForCost: formData.isVisitorCountUseForCost,

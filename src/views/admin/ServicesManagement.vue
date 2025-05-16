@@ -44,8 +44,8 @@
     <!-- Модальное окно подтверждения удаления -->
     <DeleteConfirmation 
       v-if="showDeleteConfirmModal" 
-      :service="serviceToDelete" 
-      @close="showDeleteConfirmModal = false" 
+      :item-name="`услугу &quot;${serviceToDelete?.ServiceName || ''}&quot;`" 
+      @cancel="showDeleteConfirmModal = false" 
       @confirm="deleteService"
     />
   </div>
@@ -152,7 +152,7 @@ async function deleteService() {
     if (!serviceToDelete.value) return;
     
     // Удаление услуги через хранилище
-    const result = await serviceStore.deleteService(serviceToDelete.value.serviceId);
+    const result = await serviceStore.deleteService(serviceToDelete.value.ServiceId);
     
     if (result.success) {
       // Закрытие модального окна при успешном удалении

@@ -1,6 +1,6 @@
 // Хранилище для управления услугами
 import { defineStore } from 'pinia';
-import { getEditableServices, createService, updateService } from '@/api/serviceApi';
+import { getEditableServices, createService, updateService, deleteService as apiDeleteService } from '@/api/serviceApi';
 
 export const useServiceStore = defineStore('service', {
   state: () => ({
@@ -130,16 +130,28 @@ export const useServiceStore = defineStore('service', {
       }
     },
     
-    // Удаление услуги (метод для будущей реализации)
+    // Удаление услуги
     async deleteService(id) {
-      // В текущем API нет метода для удаления услуги
-      // Этот метод оставлен для будущей реализации
-      console.log(`Запрос на удаление услуги с ID ${id}`);
+      this.loading = true;
+      this.error = null;
       
-      // Временное решение - удаляем услугу из локального состояния
-      this.services = this.services.filter(service => service.serviceId !== id);
-      
-      return { success: true };
+      try {
+        console.log(`Запрос на удаление услуги с ID ${id}`);
+        
+        // Вызываем API для удаления услуги
+        await apiDeleteService(id);
+        
+        // Обновляем список услуг после удаления
+        await this.fetchServices();
+        
+        return { success: true };
+      } catch (error) {
+        this.error = error.message || 'Ошибка при удалении услуги';
+        console.error(`Ошибка при удалении услуги с ID ${id}:`, error);
+        return { success: false, error: this.error };
+      } finally {
+        this.loading = false;
+      }
     }
   }
 });
