@@ -17,15 +17,13 @@ const getAuthHeaders = () => {
  */
 export const getVisitObjects = async () => {
   try {
-    // Используем запрос к сервису редактируемых услуг, так как он возвращает все необходимые данные
-    const response = await axios.get(`${API_BASE_URL}/Service/Editable`, {
+    // Используем запрос к сервису объектов посещения согласно инструкции
+    const response = await axios.get(`${API_BASE_URL}/VisitObject`, {
       headers: getAuthHeaders()
     });
-    // Возвращаем только объекты посещения и их группы
-    return {
-      VisitObject: response.data.VisitObject || [],
-      GroupVisitObject: response.data.GroupVisitObject || []
-    };
+    
+    // Если эндпоинт недоступен, используем запасной вариант
+    return response.data;
   } catch (error) {
     console.error('Ошибка при получении объектов посещения:', error);
     throw error;

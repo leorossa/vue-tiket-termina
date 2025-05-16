@@ -1,157 +1,115 @@
 // Хранилище для управления услугами
 import { defineStore } from 'pinia';
-import { getEditableServices, createService, updateService, deleteService as apiDeleteService } from '@/api/serviceApi';
+import { ref } from 'vue';
+import * as serviceApi from '@/api/serviceApi';
 
-export const useServiceStore = defineStore('service', {
-  state: () => ({
-    services: [],
-    visitObjects: [],
-    categoryVisitors: [],
-    groupVisitObjects: [],
-    groupCategoryVisitors: [],
-    seanceGrids: [],
-    loading: false,
-    error: null
-  }),
-  
-  getters: {
-    // Получение всех услуг
-    getAllServices: (state) => state.services,
-    
-    // Получение услуги по ID
-    getServiceById: (state) => (id) => {
-      return state.services.find(service => service.serviceId === id);
-    },
-    
-    // Получение всех объектов посещения
-    getAllVisitObjects: (state) => state.visitObjects,
-    
-    // Получение всех категорий посетителей
-    getAllCategoryVisitors: (state) => state.categoryVisitors,
-    
-    // Проверка загрузки
-    isLoading: (state) => state.loading
-  },
-  
-  actions: {
-    // Загрузка всех редактируемых услуг
-    async fetchServices() {
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        const response = await getEditableServices();
-        console.log('Ответ API:', response);
-        
-        // Сохраняем полученные данные в хранилище
-        this.services = response.Service || [];
-        
-        // Преобразуем данные для совместимости с фронтендом
-        if (Array.isArray(this.services)) {
-          this.services.forEach(service => {
-            // Добавляем пустые массивы, если их нет
-            service.visitObjects = service.visitObjects || [];
-            service.categoryVisitor = service.categoryVisitor || [];
-            
-            // Убедимся, что стоимость отображается как число
-            if (service.Cost !== undefined) {
-              service.Cost = parseFloat(service.Cost);
-            }
-            
-            // Добавляем поле Description, если есть только Comment
-            if (!service.Description && service.Comment) {
-              service.Description = service.Comment;
-            }
-          });
-        }
-        
-        console.log('Загруженные услуги с преобразованиями:', this.services);
-        
-        // Заполняем справочники из ответа API
-        this.visitObjects = response.VisitObject || [];
-        this.categoryVisitors = response.ObjectCategoryVisitor || [];
-        this.groupVisitObjects = response.GroupVisitObject || [];
-        this.groupCategoryVisitors = response.GroupCategoryVisitor || [];
-        this.seanceGrids = response.SeanceGrid || [];
-        
-        console.log('Услуги загружены:', this.services);
-      } catch (error) {
-        this.error = error.message || 'Ошибка при загрузке услуг';
-        console.error('Ошибка при загрузке услуг:', error);
-      } finally {
-        this.loading = false;
-      }
-    },
-    
-    // Создание новой услуги
-    async addService(serviceData) {
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        console.log('Отправка данных для создания услуги:', serviceData);
-        
-        // Удаляем ServiceId из данных, если он есть, т.к. при создании он не нужен
-        const { ServiceId, ...createData } = serviceData;
-        
-        await createService(createData);
-        
-        // Обновляем список услуг после создания
-        await this.fetchServices();
-        
-        return { success: true };
-      } catch (error) {
-        this.error = error.message || 'Ошибка при создании услуги';
-        console.error('Ошибка при создании услуги:', error);
-        return { success: false, error: this.error };
-      } finally {
-        this.loading = false;
-      }
-    },
-    
-    // Обновление существующей услуги
-    async updateService(id, serviceData) {
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        await updateService(id, serviceData);
-        
-        // Обновляем список услуг после обновления
-        await this.fetchServices();
-        
-        return { success: true };
-      } catch (error) {
-        this.error = error.message || 'Ошибка при обновлении услуги';
-        console.error(`Ошибка при обновлении услуги с ID ${id}:`, error);
-        return { success: false, error: this.error };
-      } finally {
-        this.loading = false;
-      }
-    },
-    
-    // Удаление услуги
-    async deleteService(id) {
-      this.loading = true;
-      this.error = null;
-      
-      try {
-        console.log(`Запрос на удаление услуги с ID ${id}`);
-        
-        // Вызываем API для удаления услуги
-        await apiDeleteService(id);
-        
-        // Обновляем список услуг после удаления
-        await this.fetchServices();
-        
-        return { success: true };
-      } catch (error) {
-        this.error = error.message || 'Ошибка при удалении услуги';
-        console.error(`Ошибка при удалении услуги с ID ${id}:`, error);
-        return { success: false, error: this.error };
-      } finally {
-        this.loading = false;
-      }
+export const useServiceStore = defineStore('service', () => {
+  // Состояние хранилища
+  const services = ref([]);
+  const loading = ref(false);
+  const error = ref(null);
+
+  // Действия
+  // Загрузка всех услуг
+  async function fetchServices() {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const data = await serviceApi.getAllServices();
+      services.value = data;
+      return data;
+    } catch (err) {
+      console.error('Ошибка при загрузке услуг:', err);
+      error.value = 'Не удалось загрузить услуги';
+      throw err;
+    } finally {
+      loading.value = false;
     }
   }
+
+  // Получение услуги по ID
+  async function getServiceById(serviceId) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const data = await serviceApi.getServiceById(serviceId);
+      return data;
+    } catch (err) {
+      console.error(`Ошибка при получении услуги с ID ${serviceId}:`, err);
+      error.value = 'Не удалось получить данные услуги';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // Создание новой услуги
+  async function createService(serviceData) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const data = await serviceApi.createService(serviceData);
+      await fetchServices(); // Обновляем список услуг после добавления
+      return data;
+    } catch (err) {
+      console.error('Ошибка при создании услуги:', err);
+      error.value = 'Не удалось создать услугу';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // Обновление услуги
+  async function updateService(serviceData) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const data = await serviceApi.updateService(serviceData);
+      await fetchServices(); // Обновляем список услуг после обновления
+      return data;
+    } catch (err) {
+      console.error(`Ошибка при обновлении услуги с ID ${serviceData.ServiceId}:`, err);
+      error.value = 'Не удалось обновить услугу';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // Удаление услуги
+  async function deleteService(serviceId) {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const data = await serviceApi.deleteService(serviceId);
+      // Удаляем услугу из локального списка
+      services.value = services.value.filter(service => service.ServiceId !== serviceId);
+      return data;
+    } catch (err) {
+      console.error(`Ошибка при удалении услуги с ID ${serviceId}:`, err);
+      error.value = 'Не удалось удалить услугу';
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  return {
+    // Состояние
+    services,
+    loading,
+    error,
+    // Действия
+    fetchServices,
+    getServiceById,
+    createService,
+    updateService,
+    deleteService
+  };
 });

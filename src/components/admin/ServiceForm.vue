@@ -1,102 +1,187 @@
 <template>
   <div class="admin-modal-backdrop" @click.self="$emit('close')">
-    <div class="admin-modal">
+    <div class="admin-modal admin-modal-lg">
       <div class="admin-modal-header">
         <h3 class="admin-modal-title">{{ isEditing ? 'Редактирование услуги' : 'Создание новой услуги' }}</h3>
         <button @click="$emit('close')" class="admin-button secondary icon">✕</button>
       </div>
       <div class="admin-modal-body">
-        <form @submit.prevent="saveService">
-          <!-- Основная информация -->
-          <div class="admin-form-group">
-            <label for="serviceName">Название услуги:</label>
-            <input
-              id="serviceName"
-              v-model="formData.serviceName"
-              type="text"
-              required
-              class="admin-input"
-            />
+        <div class="admin-tabs">
+          <div 
+            :class="['admin-tab', { active: activeTab === 'main' }]" 
+            @click="activeTab = 'main'"
+          >
+            Основные данные
           </div>
-          
-          <div class="admin-form-group">
-            <label for="serviceDescription">Описание:</label>
-            <textarea
-              id="serviceDescription"
-              v-model="formData.description"
-              class="admin-textarea"
-            ></textarea>
+          <div 
+            :class="['admin-tab', { active: activeTab === 'objects' }]" 
+            @click="activeTab = 'objects'"
+          >
+            Объекты посещения
           </div>
-          
-          <div class="admin-form-group">
-            <label for="serviceCost">Стоимость:</label>
-            <input
-              id="serviceCost"
-              v-model="formData.cost"
-              type="number"
-              step="0.01"
-              min="0"
-              required
-              class="admin-input"
-            />
+          <div 
+            :class="['admin-tab', { active: activeTab === 'categories' }]" 
+            @click="activeTab = 'categories'"
+          >
+            Категории посетителей
           </div>
-
-          <!-- Настройки услуги -->
-          <div class="admin-form-group">
-            <label>Настройки услуги:</label>
-            <div class="d-flex flex-column">
-              <label class="d-flex align-items-center mb-2">
-                <input type="checkbox" v-model="formData.isNeedVisitDate" class="admin-checkbox" />
-                <span>Требуется дата посещения</span>
-              </label>
-              <label class="d-flex align-items-center mb-2">
-                <input type="checkbox" v-model="formData.isNeedVisitTime" class="admin-checkbox" />
-                <span>Требуется время посещения</span>
-              </label>
-              <label class="d-flex align-items-center mb-2">
-                <input type="checkbox" v-model="formData.isVisitObjectUseForCost" class="admin-checkbox" />
-                <span>Объект посещения влияет на стоимость</span>
-              </label>
-              <label class="d-flex align-items-center mb-2">
-                <input type="checkbox" v-model="formData.isCategoryVisitorUseForCost" class="admin-checkbox" />
-                <span>Категория посетителя влияет на стоимость</span>
-              </label>
-              <label class="d-flex align-items-center mb-2">
-                <input type="checkbox" v-model="formData.isVisitorCountUseForCost" class="admin-checkbox" />
-                <span>Количество посетителей влияет на стоимость</span>
-              </label>
-              <label class="d-flex align-items-center mb-2">
-                <input type="checkbox" v-model="formData.isUseOneCategory" class="admin-checkbox" />
-                <span>Использовать только одну категорию</span>
-              </label>
-            </div>
+          <div 
+            :class="['admin-tab', { active: activeTab === 'prices' }]" 
+            @click="activeTab = 'prices'"
+          >
+            Цены
           </div>
-
-          <!-- Период действия услуги -->
-          <div class="admin-form-group">
-            <label>Период действия услуги:</label>
-            <div class="d-flex gap-2">
-              <div class="flex-grow-1">
-                <label for="dtBegin">Дата начала:</label>
-                <input 
-                  id="dtBegin" 
-                  v-model="formData.dtBegin" 
-                  type="date" 
+        </div>
+        
+        <div class="admin-tab-content">
+          <!-- Основные данные -->
+          <div v-show="activeTab === 'main'">
+            <form @submit.prevent="saveService">
+              <!-- Основная информация -->
+              <div class="admin-form-group">
+                <label for="serviceName">Название услуги:</label>
+                <input
+                  id="serviceName"
+                  v-model="formData.serviceName"
+                  type="text"
+                  required
                   class="admin-input"
                 />
               </div>
-              <div class="flex-grow-1">
-                <label for="dtEnd">Дата окончания:</label>
-                <input 
-                  id="dtEnd" 
-                  v-model="formData.dtEnd" 
-                  type="date" 
+              
+              <div class="admin-form-group">
+                <label for="serviceDescription">Описание:</label>
+                <textarea
+                  id="serviceDescription"
+                  v-model="formData.description"
+                  class="admin-textarea"
+                ></textarea>
+              </div>
+              
+              <div class="admin-form-group">
+                <label for="serviceCost">Базовая стоимость:</label>
+                <input
+                  id="serviceCost"
+                  v-model="formData.cost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
                   class="admin-input"
                 />
               </div>
-            </div>
+
+              <!-- Настройки услуги -->
+              <div class="admin-form-group">
+                <label>Настройки услуги:</label>
+                <div class="admin-checkbox-grid">
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isNeedVisitDate" class="admin-checkbox" />
+                    <span>Требуется дата посещения</span>
+                  </label>
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isNeedVisitTime" class="admin-checkbox" />
+                    <span>Требуется время посещения</span>
+                  </label>
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isPROCultureChecked" class="admin-checkbox" />
+                    <span>Проверено в PRO.Культура</span>
+                  </label>
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isDisableEditVisitObject" class="admin-checkbox" />
+                    <span>Запретить редактирование объекта</span>
+                  </label>
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isDisableEditVisitor" class="admin-checkbox" />
+                    <span>Запретить редактирование посетителя</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Параметры расчета стоимости -->
+              <div class="admin-form-group">
+                <label>Параметры расчета стоимости:</label>
+                <div class="admin-checkbox-grid">
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isVisitObjectUseForCost" class="admin-checkbox" />
+                    <span>Объект влияет на стоимость</span>
+                  </label>
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isCategoryVisitorUseForCost" class="admin-checkbox" />
+                    <span>Категория влияет на стоимость</span>
+                  </label>
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isVisitorCountUseForCost" class="admin-checkbox" />
+                    <span>Количество влияет на стоимость</span>
+                  </label>
+                  <label class="admin-checkbox-item">
+                    <input type="checkbox" v-model="formData.isUseOneCategory" class="admin-checkbox" />
+                    <span>Использовать только одну категорию</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Период действия услуги -->
+              <div class="admin-form-group">
+                <label>Период действия услуги:</label>
+                <div class="d-flex gap-2">
+                  <div class="flex-grow-1">
+                    <label for="dtBegin">Дата начала:</label>
+                    <input 
+                      id="dtBegin" 
+                      v-model="formData.dtBegin" 
+                      type="date" 
+                      class="admin-input"
+                    />
+                  </div>
+                  <div class="flex-grow-1">
+                    <label for="dtEnd">Дата окончания:</label>
+                    <input 
+                      id="dtEnd" 
+                      v-model="formData.dtEnd" 
+                      type="date" 
+                      class="admin-input"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- PRO.Культура -->
+              <div class="admin-form-group">
+                <label for="proCultureIdentifier">ID в PRO.Культура:</label>
+                <input
+                  id="proCultureIdentifier"
+                  v-model="formData.proCultureIdentifier"
+                  type="number"
+                  class="admin-input"
+                />
+              </div>
+            </form>
           </div>
-        </form>
+          
+          <!-- Объекты посещения -->
+          <div v-show="activeTab === 'objects'">
+            <VisitObjectSelector v-model="selectedVisitObjects" />
+          </div>
+          
+          <!-- Категории посетителей -->
+          <div v-show="activeTab === 'categories'">
+            <CategoryVisitorSelector 
+              v-model="selectedCategoryVisitors" 
+              :is-one-category-mode="formData.isUseOneCategory" 
+            />
+          </div>
+          
+          <!-- Цены -->
+          <div v-show="activeTab === 'prices'">
+            <PriceMatrix 
+              v-model="selectedPrices" 
+              :visit-objects="selectedVisitObjects" 
+              :category-visitors="selectedCategoryVisitors" 
+              :base-cost="parseFloat(formData.cost)" 
+            />
+          </div>
+        </div>
       </div>
       <div class="admin-modal-footer">
         <button @click="$emit('close')" class="admin-button secondary">Отмена</button>
@@ -107,7 +192,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
+import VisitObjectSelector from '@/components/admin/VisitObjectSelector.vue';
+import CategoryVisitorSelector from '@/components/admin/CategoryVisitorSelector.vue';
+import PriceMatrix from '@/components/admin/PriceMatrix.vue';
 
 // Определение входных параметров
 const props = defineProps({
@@ -123,6 +211,12 @@ const props = defineProps({
 
 // Определение событий
 const emit = defineEmits(['close', 'save']);
+
+// Состояния компонента
+const activeTab = ref('main'); // Активная вкладка
+const selectedVisitObjects = ref([]); // Выбранные объекты посещения
+const selectedCategoryVisitors = ref([]); // Выбранные категории посетителей
+const selectedPrices = ref([]); // Выбранные цены
 
 // Функция форматирования даты для инпута типа date
 function formatDateForInput(dateString) {
@@ -174,6 +268,8 @@ const formData = reactive({
 watch(() => props.service, (newService) => {
   if (newService) {
     console.log('Получены данные услуги для редактирования:', newService);
+    
+    // Заполняем основные данные услуги
     Object.assign(formData, {
       serviceId: newService.ServiceId,
       serviceName: newService.ServiceName,
@@ -194,6 +290,19 @@ watch(() => props.service, (newService) => {
       isDisableEditVisitObject: newService.IsDisableEditVisitObject || false,
       isDisableEditVisitor: newService.IsDisableEditVisitor || false
     });
+    
+    // Заполняем связанные данные
+    if (newService.VisitObject) {
+      selectedVisitObjects.value = newService.VisitObject;
+    }
+    
+    if (newService.CategoryVisitor) {
+      selectedCategoryVisitors.value = newService.CategoryVisitor;
+    }
+    
+    if (newService.Price) {
+      selectedPrices.value = newService.Price;
+    }
   }
 }, { immediate: true, deep: true });
 
@@ -221,8 +330,14 @@ function saveService() {
       IsVisitObjectUseForCost: formData.isVisitObjectUseForCost,
       IsCategoryVisitorUseForCost: formData.isCategoryVisitorUseForCost,
       IsVisitorCountUseForCost: formData.isVisitorCountUseForCost,
-      IsUseOneCategory: formData.isUseOneCategory
+      IsUseOneCategory: formData.isUseOneCategory,
+      // Связанные объекты
+      VisitObject: selectedVisitObjects.value,
+      CategoryVisitor: selectedCategoryVisitors.value,
+      Price: selectedPrices.value
     };
+    
+    console.log('Отправка данных услуги:', serviceData);
     
     // Отправка данных родительскому компоненту
     emit('save', serviceData, props.isEditing);
@@ -231,3 +346,52 @@ function saveService() {
   }
 }
 </script>
+
+<style scoped>
+.admin-modal-lg {
+  width: 90%;
+  max-width: 900px;
+}
+
+.admin-tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 1rem;
+}
+
+.admin-tab {
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.admin-tab:hover {
+  background-color: #f5f5f5;
+}
+
+.admin-tab.active {
+  border-bottom: 2px solid #4a6cf7;
+  font-weight: 600;
+}
+
+.admin-tab-content {
+  padding: 1rem 0;
+}
+
+.admin-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.5rem;
+}
+
+.admin-checkbox-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.admin-checkbox-item input {
+  margin-right: 0.5rem;
+}
+</style>

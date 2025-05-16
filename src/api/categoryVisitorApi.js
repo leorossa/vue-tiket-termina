@@ -18,12 +18,12 @@ const getAuthHeaders = () => {
 export const getCategoryVisitors = async () => {
   try {
     // Используем запрос к сервису редактируемых услуг, так как он возвращает все необходимые данные
-    const response = await axios.get(`${API_BASE_URL}/Service/Editable`, {
+    const response = await axios.get(`${API_BASE_URL}/CategoryVisitors`, {
       headers: getAuthHeaders()
     });
     // Возвращаем только категории посетителей и их группы
     return {
-      CategoryVisitor: response.data.ObjectCategoryVisitor || [],
+      CategoryVisitor: response.data.CategoryVisitor || [],
       GroupCategoryVisitor: response.data.GroupCategoryVisitor || []
     };
   } catch (error) {
@@ -39,7 +39,7 @@ export const getCategoryVisitors = async () => {
  */
 export const createCategoryVisitor = async (categoryData) => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/CategoryVisitor/Create`, categoryData, {
+    const response = await axios.post(`${API_BASE_URL}/CategoryVisitors`, categoryData, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -57,7 +57,7 @@ export const createCategoryVisitor = async (categoryData) => {
  */
 export const updateCategoryVisitor = async (id, categoryData) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/CategoryVisitor/Update/${id}`, categoryData, {
+    const response = await axios.put(`${API_BASE_URL}/CategoryVisitors/Update/${id}`, categoryData, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -74,7 +74,7 @@ export const updateCategoryVisitor = async (id, categoryData) => {
  */
 export const deleteCategoryVisitor = async (id) => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/CategoryVisitor/Delete/${id}`, {
+    const response = await axios.delete(`${API_BASE_URL}/CategoryVisitors/Delete/${id}`, {
       headers: getAuthHeaders()
     });
     return response.data;
