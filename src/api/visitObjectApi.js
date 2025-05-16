@@ -22,7 +22,6 @@ export const getVisitObjects = async () => {
       headers: getAuthHeaders()
     });
     
-    // Если эндпоинт недоступен, используем запасной вариант
     return response.data;
   } catch (error) {
     console.error('Ошибка при получении объектов посещения:', error);
@@ -31,14 +30,30 @@ export const getVisitObjects = async () => {
 };
 
 /**
- * Создание нового объекта посещения
- * @param {Object} objectData Данные объекта
- * @returns {Promise} Промис с результатом операции
+ * Получение объекта посещения по ID
+ * @param {number} visitObjectId - ID объекта посещения
+ * @returns {Promise<Object>} Данные объекта посещения
  */
-export const createVisitObject = async (objectData) => {
+export async function getVisitObjectById(visitObjectId) {
   try {
-    // Используем запрос к сервису создания объекта посещения
-    const response = await axios.post(`${API_BASE_URL}/VisitObject/Create`, objectData, {
+    const response = await axios.get(`${API_BASE_URL}/VisitObject/${visitObjectId}`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Ошибка при получении объекта посещения с ID ${visitObjectId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Создание нового объекта посещения
+ * @param {Object} visitObjectData - Данные для создания объекта посещения
+ * @returns {Promise<Object>} Созданный объект посещения
+ */
+export async function createVisitObject(visitObjectData) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/VisitObject/Create`, visitObjectData, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -46,41 +61,39 @@ export const createVisitObject = async (objectData) => {
     console.error('Ошибка при создании объекта посещения:', error);
     throw error;
   }
-};
+}
 
 /**
- * Обновление существующего объекта посещения
- * @param {Number} id ID объекта
- * @param {Object} objectData Обновленные данные объекта
- * @returns {Promise} Промис с результатом операции
+ * Обновление объекта посещения
+ * @param {number} visitObjectId - ID объекта посещения
+ * @param {Object} visitObjectData - Данные для обновления объекта посещения
+ * @returns {Promise<Object>} Обновленный объект посещения
  */
-export const updateVisitObject = async (id, objectData) => {
+export async function updateVisitObject(visitObjectId, visitObjectData) {
   try {
-    // Используем запрос к сервису обновления объекта посещения
-    const response = await axios.put(`${API_BASE_URL}/VisitObject/Update/${id}`, objectData, {
+    const response = await axios.put(`${API_BASE_URL}/VisitObject/Update/${visitObjectId}`, visitObjectData, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    console.error(`Ошибка при обновлении объекта посещения с ID ${id}:`, error);
+    console.error(`Ошибка при обновлении объекта посещения с ID ${visitObjectId}:`, error);
     throw error;
   }
-};
+}
 
 /**
  * Удаление объекта посещения
- * @param {Number} id ID объекта для удаления
- * @returns {Promise} Промис с результатом операции
+ * @param {number} visitObjectId - ID объекта посещения для удаления
+ * @returns {Promise<Object>} Результат операции
  */
-export const deleteVisitObject = async (id) => {
+export async function deleteVisitObject(visitObjectId) {
   try {
-    // Используем запрос к сервису удаления объекта посещения
-    const response = await axios.delete(`${API_BASE_URL}/VisitObject/Delete/${id}`, {
+    const response = await axios.delete(`${API_BASE_URL}/VisitObject/Delete/${visitObjectId}`, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    console.error(`Ошибка при удалении объекта посещения с ID ${id}:`, error);
+    console.error(`Ошибка при удалении объекта посещения с ID ${visitObjectId}:`, error);
     throw error;
   }
 };

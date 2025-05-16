@@ -17,15 +17,12 @@ const getAuthHeaders = () => {
  */
 export const getCategoryVisitors = async () => {
   try {
-    // Используем запрос к сервису редактируемых услуг, так как он возвращает все необходимые данные
+    // Используем запрос к сервису категорий посетителей
     const response = await axios.get(`${API_BASE_URL}/CategoryVisitors`, {
       headers: getAuthHeaders()
     });
-    // Возвращаем только категории посетителей и их группы
-    return {
-      CategoryVisitor: response.data.CategoryVisitor || [],
-      GroupCategoryVisitor: response.data.GroupCategoryVisitor || []
-    };
+    
+    return response.data;
   } catch (error) {
     console.error('Ошибка при получении категорий посетителей:', error);
     throw error;
@@ -33,13 +30,30 @@ export const getCategoryVisitors = async () => {
 };
 
 /**
- * Создание новой категории посетителей
- * @param {Object} categoryData Данные категории
- * @returns {Promise} Промис с результатом операции
+ * Получение категории посетителей по ID
+ * @param {number} id - ID категории посетителей
+ * @returns {Promise<Object>} Данные категории посетителей
  */
-export const createCategoryVisitor = async (categoryData) => {
+export async function getCategoryVisitorById(id) {
   try {
-    const response = await axios.post(`${API_BASE_URL}/CategoryVisitors`, categoryData, {
+    const response = await axios.get(`${API_BASE_URL}/CategoryVisitors/${id}`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Ошибка при получении категории посетителей с ID ${id}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Создание новой категории посетителей
+ * @param {Object} categoryData - Данные для создания категории
+ * @returns {Promise<Object>} Созданная категория
+ */
+export async function createCategoryVisitor(categoryData) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/CategoryVisitors/Create`, categoryData, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -47,15 +61,15 @@ export const createCategoryVisitor = async (categoryData) => {
     console.error('Ошибка при создании категории посетителей:', error);
     throw error;
   }
-};
+}
 
 /**
- * Обновление существующей категории посетителей
- * @param {Number} id ID категории
- * @param {Object} categoryData Обновленные данные категории
- * @returns {Promise} Промис с результатом операции
+ * Обновление категории посетителей
+ * @param {number} id - ID категории
+ * @param {Object} categoryData - Данные для обновления категории
+ * @returns {Promise<Object>} Обновленная категория
  */
-export const updateCategoryVisitor = async (id, categoryData) => {
+export async function updateCategoryVisitor(id, categoryData) {
   try {
     const response = await axios.put(`${API_BASE_URL}/CategoryVisitors/Update/${id}`, categoryData, {
       headers: getAuthHeaders()
@@ -65,14 +79,14 @@ export const updateCategoryVisitor = async (id, categoryData) => {
     console.error(`Ошибка при обновлении категории посетителей с ID ${id}:`, error);
     throw error;
   }
-};
+}
 
 /**
  * Удаление категории посетителей
- * @param {Number} id ID категории для удаления
- * @returns {Promise} Промис с результатом операции
+ * @param {number} id - ID категории для удаления
+ * @returns {Promise<Object>} Результат операции
  */
-export const deleteCategoryVisitor = async (id) => {
+export async function deleteCategoryVisitor(id) {
   try {
     const response = await axios.delete(`${API_BASE_URL}/CategoryVisitors/Delete/${id}`, {
       headers: getAuthHeaders()
@@ -82,4 +96,4 @@ export const deleteCategoryVisitor = async (id) => {
     console.error(`Ошибка при удалении категории посетителей с ID ${id}:`, error);
     throw error;
   }
-};
+}

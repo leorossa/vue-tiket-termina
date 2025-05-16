@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
 // Базовый URL API
-const API_BASE_URL = '/api'; // Будет настроен через прокси в vite.config.js
+const API_BASE_URL = '/api';
 
 // Функция для получения заголовков авторизации
 const getAuthHeaders = () => {
@@ -12,17 +12,33 @@ const getAuthHeaders = () => {
 };
 
 /**
- * Получение всех услуг
- * @returns {Promise<Array>} Массив услуг
+ * Получение списка редактируемых услуг
+ * @returns {Promise} Промис с данными услуг
  */
-export async function getAllServices() {
+export const getEditableServices = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/Service/All`, {
+    const response = await axios.get(`${API_BASE_URL}/Service/Editable`, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    console.error('Ошибка при получении услуг:', error);
+    console.error('Ошибка при получении редактируемых услуг:', error);
+    throw error;
+  }
+};
+
+/**
+ * Получение простых услуг
+ * @returns {Promise<Object>} Объект с данными простых услуг
+ */
+export async function getSimpleServices() {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/Service/Simple`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при получении простых услуг:', error);
     throw error;
   }
 }

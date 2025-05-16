@@ -1,7 +1,13 @@
 // Хранилище для управления услугами
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import * as serviceApi from '@/api/serviceApi';
+import { 
+  getEditableServices, 
+  getServiceById as apiGetServiceById, 
+  createService as apiCreateService, 
+  updateService as apiUpdateService, 
+  deleteService as apiDeleteService 
+} from '@/api/serviceApi';
 
 export const useServiceStore = defineStore('service', () => {
   // Состояние хранилища
@@ -16,9 +22,9 @@ export const useServiceStore = defineStore('service', () => {
     error.value = null;
 
     try {
-      const data = await serviceApi.getAllServices();
-      services.value = data;
-      return data;
+      const response = await getEditableServices();
+      services.value = response.Service || [];
+      return response;
     } catch (err) {
       console.error('Ошибка при загрузке услуг:', err);
       error.value = 'Не удалось загрузить услуги';
@@ -34,7 +40,7 @@ export const useServiceStore = defineStore('service', () => {
     error.value = null;
 
     try {
-      const data = await serviceApi.getServiceById(serviceId);
+      const data = await apiGetServiceById(serviceId);
       return data;
     } catch (err) {
       console.error(`Ошибка при получении услуги с ID ${serviceId}:`, err);
@@ -51,7 +57,7 @@ export const useServiceStore = defineStore('service', () => {
     error.value = null;
 
     try {
-      const data = await serviceApi.createService(serviceData);
+      const data = await apiCreateService(serviceData);
       await fetchServices(); // Обновляем список услуг после добавления
       return data;
     } catch (err) {
@@ -69,7 +75,7 @@ export const useServiceStore = defineStore('service', () => {
     error.value = null;
 
     try {
-      const data = await serviceApi.updateService(serviceData);
+      const data = await apiUpdateService(serviceData);
       await fetchServices(); // Обновляем список услуг после обновления
       return data;
     } catch (err) {
@@ -87,7 +93,7 @@ export const useServiceStore = defineStore('service', () => {
     error.value = null;
 
     try {
-      const data = await serviceApi.deleteService(serviceId);
+      const data = await apiDeleteService(serviceId);
       // Удаляем услугу из локального списка
       services.value = services.value.filter(service => service.ServiceId !== serviceId);
       return data;
