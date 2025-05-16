@@ -17,10 +17,15 @@ const getAuthHeaders = () => {
  */
 export const getCategoryVisitors = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/CategoryVisitor/All`, {
+    // Используем запрос к сервису редактируемых услуг, так как он возвращает все необходимые данные
+    const response = await axios.get(`${API_BASE_URL}/Service/Editable`, {
       headers: getAuthHeaders()
     });
-    return response.data;
+    // Возвращаем только категории посетителей и их группы
+    return {
+      CategoryVisitor: response.data.ObjectCategoryVisitor || [],
+      GroupCategoryVisitor: response.data.GroupCategoryVisitor || []
+    };
   } catch (error) {
     console.error('Ошибка при получении категорий посетителей:', error);
     throw error;

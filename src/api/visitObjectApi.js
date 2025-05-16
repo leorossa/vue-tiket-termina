@@ -17,10 +17,15 @@ const getAuthHeaders = () => {
  */
 export const getVisitObjects = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/VisitObject/All`, {
+    // Используем запрос к сервису редактируемых услуг, так как он возвращает все необходимые данные
+    const response = await axios.get(`${API_BASE_URL}/Service/Editable`, {
       headers: getAuthHeaders()
     });
-    return response.data;
+    // Возвращаем только объекты посещения и их группы
+    return {
+      VisitObject: response.data.VisitObject || [],
+      GroupVisitObject: response.data.GroupVisitObject || []
+    };
   } catch (error) {
     console.error('Ошибка при получении объектов посещения:', error);
     throw error;
@@ -34,6 +39,7 @@ export const getVisitObjects = async () => {
  */
 export const createVisitObject = async (objectData) => {
   try {
+    // Используем запрос к сервису создания объекта посещения
     const response = await axios.post(`${API_BASE_URL}/VisitObject/Create`, objectData, {
       headers: getAuthHeaders()
     });
@@ -52,6 +58,7 @@ export const createVisitObject = async (objectData) => {
  */
 export const updateVisitObject = async (id, objectData) => {
   try {
+    // Используем запрос к сервису обновления объекта посещения
     const response = await axios.put(`${API_BASE_URL}/VisitObject/Update/${id}`, objectData, {
       headers: getAuthHeaders()
     });
@@ -69,6 +76,7 @@ export const updateVisitObject = async (id, objectData) => {
  */
 export const deleteVisitObject = async (id) => {
   try {
+    // Используем запрос к сервису удаления объекта посещения
     const response = await axios.delete(`${API_BASE_URL}/VisitObject/Delete/${id}`, {
       headers: getAuthHeaders()
     });
