@@ -38,6 +38,7 @@
             ></textarea>
           </div>
           
+          <!--
           <div class="admin-form-group">
             <label for="groupId">Группа объектов</label>
             <select 
@@ -55,6 +56,7 @@
               </option>
             </select>
           </div>
+          -->
           
           <div class="admin-form-group">
             <label for="categoryId">Категория посетителей</label>
