@@ -108,27 +108,36 @@ async function handleSaveCategory(categoryData, isEdit) {
   try {
     console.log('Получены данные для сохранения:', categoryData, 'Редактирование:', isEdit);
     
-    let result;
     if (isEdit) {
       // Обновление существующей категории через хранилище
       const categoryId = categoryData.CategoryVisitorId;
       if (!categoryId) {
         throw new Error('Отсутствует ID категории для обновления');
       }
-      result = await categoryVisitorStore.updateCategoryVisitor(categoryId, categoryData);
+      
+      // Удаляем CategoryVisitorId из данных для отправки, если он не нужен в теле запроса
+      const { CategoryVisitorId, ...dataToSend } = categoryData;
+      
+      const result = await categoryVisitorStore.updateCategoryVisitor(categoryId, dataToSend);
+      
+      if (result.success) {
+        console.log('Категория успешно обновлена');
+        showCategoryModal.value = false;
+      } else {
+        // Обработка ошибки
+        console.error('Ошибка при обновлении категории:', result.error);
+      }
     } else {
       // Создание новой категории через хранилище
-      result = await categoryVisitorStore.addCategoryVisitor(categoryData);
-    }
-    
-    if (result.success) {
-      // Закрытие модального окна при успешном сохранении
-      showCategoryModal.value = false;
-      // Обновляем список категорий после успешного сохранения
-      await categoryVisitorStore.fetchCategoryVisitors();
-    } else {
-      // Обработка ошибки
-      console.error('Ошибка при сохранении категории:', result.error);
+      const result = await categoryVisitorStore.addCategoryVisitor(categoryData);
+      
+      if (result.success) {
+        console.log('Категория успешно создана');
+        showCategoryModal.value = false;
+      } else {
+        // Обработка ошибки
+        console.error('Ошибка при создании категории:', result.error);
+      }
     }
   } catch (error) {
     console.error('Ошибка при сохранении категории:', error);

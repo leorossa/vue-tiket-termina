@@ -42,10 +42,28 @@ export const useCategoryVisitorStore = defineStore('categoryVisitor', {
         console.log('Ответ API категорий:', response);
         
         // Сохраняем полученные данные в хранилище
-        this.categoryVisitors = response.CategoryVisitor || [];
-        this.groupCategoryVisitors = response.GroupCategoryVisitor || [];
+        // API возвращает массив категорий напрямую, а не объект с полями CategoryVisitor и GroupCategoryVisitor
+        this.categoryVisitors = Array.isArray(response) ? response : [];
+        
+        // Если нужно загружать группы категорий отдельно, добавьте вызов соответствующего API
+        // Временное решение - создаем массив уникальных групп из загруженных категорий
+        if (Array.isArray(response)) {
+          const groupsMap = new Map();
+          response.forEach(cat => {
+            if (cat.GroupCategoryVisitorId && cat.GroupCategoryVisitorName) {
+              groupsMap.set(cat.GroupCategoryVisitorId, {
+                GroupCategoryVisitorId: cat.GroupCategoryVisitorId,
+                GroupCategoryVisitorName: cat.GroupCategoryVisitorName
+              });
+            }
+          });
+          this.groupCategoryVisitors = Array.from(groupsMap.values());
+        } else {
+          this.groupCategoryVisitors = [];
+        }
         
         console.log('Категории загружены:', this.categoryVisitors);
+        console.log('Группы категорий загружены:', this.groupCategoryVisitors);
       } catch (error) {
         this.error = error.message || 'Ошибка при загрузке категорий';
         console.error('Ошибка при загрузке категорий:', error);
@@ -88,10 +106,37 @@ export const useCategoryVisitorStore = defineStore('categoryVisitor', {
       try {
         console.log(`Обновление категории с ID ${id}:`, categoryData);
         
-        await updateCategoryVisitor(id, categoryData);
+        // Подготавливаем данные для отправки в соответствии с DTO на бэкенде
+        // Отправляем только те поля, которые ожидает сервер
+        const dataToSend = {
+          CategoryVisitorName: categoryData.CategoryVisitorName
+        };
         
-        // Обновляем список категорий после обновления
-        await this.fetchCategoryVisitors();
+        // Согласно ошибке, сервер не ожидает GroupCategoryVisitorId в DTO
+        // Поэтому не включаем его в запрос
+        
+        console.log('Отправляемые данные на сервер:', dataToSend);
+        
+        // Вызываем API для обновления категории
+        const updatedCategory = await updateCategoryVisitor(id, dataToSend);
+        console.log('Ответ от сервера при обновлении категории:', updatedCategory);
+        
+        // Находим индекс обновляемой категории в массиве
+        const index = this.categoryVisitors.findIndex(cat => cat.CategoryVisitorId === id);
+        
+        if (index !== -1) {
+          // Обновляем категорию в локальном хранилище
+          this.categoryVisitors[index] = { 
+            ...this.categoryVisitors[index], 
+            CategoryVisitorName: dataToSend.CategoryVisitorName,
+            GroupCategoryVisitorId: dataToSend.GroupCategoryVisitorId
+          };
+          console.log('Категория обновлена в хранилище:', this.categoryVisitors[index]);
+        } else {
+          console.warn(`Категория с ID ${id} не найдена в локальном хранилище, выполняем полную перезагрузку`);
+          // Если не нашли категорию, обновляем весь список
+          await this.fetchCategoryVisitors();
+        }
         
         return { success: true };
       } catch (error) {

@@ -8,8 +8,6 @@
         <tr>
           <th>ID</th>
           <th>Название</th>
-          <th>Группа</th>
-          <th>Описание</th>
           <th>Действия</th>
         </tr>
       </thead>
@@ -17,8 +15,6 @@
         <tr v-for="category in categories" :key="category.CategoryVisitorId">
           <td>{{ category.CategoryVisitorId }}</td>
           <td>{{ category.CategoryVisitorName }}</td>
-          <td>{{ category.GroupCategoryVisitorName || '-' }}</td>
-          <td>{{ category.Description || '-' }}</td>
           <td>
             <div class="admin-button-group">
               <button @click="$emit('edit', category)" class="admin-button secondary">

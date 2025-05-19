@@ -19,15 +19,7 @@
             />
           </div>
           
-          <div class="admin-form-group">
-            <label for="description">Описание</label>
-            <textarea 
-              id="description" 
-              v-model="formData.description" 
-              class="admin-textarea"
-            ></textarea>
-          </div>
-          
+          <!--
           <div class="admin-form-group">
             <label for="groupId">Группа категорий</label>
             <select 
@@ -38,13 +30,14 @@
               <option value="">Не выбрано</option>
               <option 
                 v-for="group in groupCategoryVisitors" 
-                :key="group.GroupCategoryVisitorId" 
-                :value="group.GroupCategoryVisitorId"
+                :key="group.GroupCategoryvisitorId" 
+                :value="group.GroupCategoryvisitorId"
               >
-                {{ group.GroupCategoryVisitorName }}
+                {{ group.GroupCategoryvisitorName }}
               </option>
             </select>
           </div>
+          -->
           
           <div class="admin-modal-footer">
             <button type="button" @click="$emit('cancel')" class="admin-button secondary">

@@ -6,13 +6,12 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-backend/
 .vscode/
 responce.json
 тз
 работа с услугами
 re
-TicketTerminal-API
+
 
 node_modules
 dist
