@@ -50,22 +50,26 @@ export async function getSimpleServices() {
  */
 export async function getServiceById(serviceId) {
   try {
-    // Здесь мы используем запрос к Editable, так как отдельного эндпоинта для получения одной услуги нет
-    const response = await axios.get(`${API_BASE_URL}/Service/Editable`, {
+    // Используем новый эндпоинт для получения информации по конкретной услуге
+    const response = await axios.get(`${API_BASE_URL}/Service/${serviceId}`, {
       headers: getAuthHeaders()
     });
     
-    // Ищем услугу по ID в полученных данных
-    const service = response.data.Service.find(s => s.ServiceId === serviceId);
+    console.log(`Получены данные услуги с ID ${serviceId}:`, response.data);
     
-    if (!service) {
+    // Проверяем, что данные получены
+    if (!response.data) {
       throw new Error(`Услуга с ID ${serviceId} не найдена`);
     }
     
-    // Добавляем связанные объекты и категории
-    service.VisitObject = response.data.VisitObject || [];
-    service.CategoryVisitor = response.data.CategoryVisitor || [];
-    service.Price = response.data.Price || [];
+    // Теперь мы получаем данные напрямую из ответа, без необходимости фильтрации
+    const service = response.data;
+    
+    // Проверяем наличие связанных объектов и категорий
+    // Если они отсутствуют, устанавливаем пустые массивы
+    if (!service.VisitObject) service.VisitObject = [];
+    if (!service.CategoryVisitor) service.CategoryVisitor = [];
+    if (!service.Price) service.Price = [];
     
     return service;
   } catch (error) {

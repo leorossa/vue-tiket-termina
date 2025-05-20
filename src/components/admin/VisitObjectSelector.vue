@@ -89,7 +89,31 @@ watch(() => props.modelValue, () => {
 
 // Инициализация выбранных объектов
 function initializeSelectedObjects() {
+  console.log('Инициализация выбранных объектов:', props.modelValue);
   selectedObjectIds.value = props.modelValue.map(obj => obj.VisitObjectId);
+  
+  // Обновляем свойства IsRequire для выбранных объектов
+  if (visitObjects.value.length > 0 && props.modelValue.length > 0) {
+    // Создаем карту свойств для быстрого поиска
+    const selectedPropsMap = new Map();
+    props.modelValue.forEach(obj => {
+      selectedPropsMap.set(obj.VisitObjectId, {
+        IsRequire: obj.IsRequire || false,
+        GroupVisitObjectId: obj.GroupVisitObjectId,
+        CategoryVisitorId: obj.CategoryVisitorId,
+        Address: obj.Address,
+        Comment: obj.Comment
+      });
+    });
+    
+    // Обновляем свойства объектов в списке
+    visitObjects.value.forEach(obj => {
+      if (selectedPropsMap.has(obj.VisitObjectId)) {
+        const props = selectedPropsMap.get(obj.VisitObjectId);
+        obj.IsRequire = props.IsRequire;
+      }
+    });
+  }
 }
 
 // Проверка, выбран ли объект

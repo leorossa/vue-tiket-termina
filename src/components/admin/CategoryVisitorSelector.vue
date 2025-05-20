@@ -105,7 +105,28 @@ watch(() => props.isOneCategoryMode, (newValue) => {
 
 // Инициализация выбранных категорий
 function initializeSelectedCategories() {
+  console.log('Инициализация выбранных категорий:', props.modelValue);
   selectedCategoryIds.value = props.modelValue.map(cat => cat.CategoryVisitorId);
+  
+  // Обновляем свойства RequireVisitorCount для выбранных категорий
+  if (categoryVisitors.value.length > 0 && props.modelValue.length > 0) {
+    // Создаем карту свойств для быстрого поиска
+    const selectedPropsMap = new Map();
+    props.modelValue.forEach(cat => {
+      selectedPropsMap.set(cat.CategoryVisitorId, {
+        RequireVisitorCount: cat.RequireVisitorCount || 0,
+        GroupCategoryVisitorId: cat.GroupCategoryVisitorId
+      });
+    });
+    
+    // Обновляем свойства категорий в списке
+    categoryVisitors.value.forEach(cat => {
+      if (selectedPropsMap.has(cat.CategoryVisitorId)) {
+        const props = selectedPropsMap.get(cat.CategoryVisitorId);
+        cat.RequireVisitorCount = props.RequireVisitorCount;
+      }
+    });
+  }
 }
 
 // Проверка, выбрана ли категория
