@@ -50,7 +50,7 @@ export async function getSimpleServices() {
  */
 export async function getServiceById(serviceId) {
   try {
-    // Используем новый эндпоинт для получения информации по конкретной услуге
+    // Эндпоинт для получения информации по конкретной услуге
     const response = await axios.get(`${API_BASE_URL}/Service/${serviceId}`, {
       headers: getAuthHeaders()
     });
@@ -62,7 +62,7 @@ export async function getServiceById(serviceId) {
       throw new Error(`Услуга с ID ${serviceId} не найдена`);
     }
     
-    // Теперь мы получаем данные напрямую из ответа, без необходимости фильтрации
+    // Без необходимости фильтрации
     const service = response.data;
     
     // Проверяем наличие связанных объектов и категорий
