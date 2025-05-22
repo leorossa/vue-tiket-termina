@@ -367,7 +367,7 @@ export const useUserStore = defineStore('user', {
     updateUser(id, userData) {
       try {
         // В реальном приложении здесь будет запрос к API
-        const index = this.users.findIndex(u => u.id === id);
+        const index = this.users.findIndex(u => u.Id === id);
         
         if (index !== -1) {
           // Если пароль не указан, сохраняем старый
@@ -375,13 +375,11 @@ export const useUserStore = defineStore('user', {
             userData.password = this.users[index].password;
           }
           
+          // Обновляем пользователя
           this.users[index] = { ...this.users[index], ...userData };
           
-          // Если обновляется текущий пользователь, обновляем и его
-          if (this.currentUser && this.currentUser.id === id) {
-            this.currentUser = this.users[index];
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-          }
+          // Обновляем в localStorage
+          localStorage.setItem('users', JSON.stringify(this.users));
           
           return { success: true, user: this.users[index] };
         } else {
