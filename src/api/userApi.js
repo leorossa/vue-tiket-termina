@@ -61,13 +61,14 @@ export async function createUser(userData) {
 export async function updateUser(id, userData) {
   try {
     // Согласно документации API, путь должен быть /Users/Update/{id}
-    console.log(`Отправка запроса на обновление пользователя с ID ${id}:`, userData);
     const response = await axios.put(`${API_BASE_URL}/Users/Update/${id}`, userData, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
-    console.error(`Ошибка при обновлении пользователя с ID ${id}:`, error);
+    console.error(`Ошибка при обновлении пользователя с ID ${id}:`, error.response ? { status: error.response.status, data: error.response.data, headers: error.response.headers } : error.message);
+    // Добавим вывод всего объекта ошибки, если он не стандартный AxiosError
+    if (!error.response) console.error('Полный объект ошибки:', error);
     throw error;
   }
 }

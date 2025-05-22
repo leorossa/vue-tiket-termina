@@ -1,6 +1,6 @@
 // Хранилище для управления пользователями
 import { defineStore } from 'pinia';
-import { getUsers, getUserById, createUser, updateUser, deleteUser } from '@/api/userApi';
+import { getUsers as fetchUsers, getUserById as fetchUserById, createUser, updateUser as userApiUpdateUser, deleteUser } from '@/api/userApi';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -108,7 +108,7 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       
       try {
-        const response = await getUsers();
+        const response = await fetchUsers();
         console.log('Получены пользователи:', response);
         this.users = response || [];
         return this.users;
@@ -127,7 +127,7 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       
       try {
-        const user = await getUserById(id);
+        const user = await fetchUserById(id);
         return user;
       } catch (error) {
         this.error = error.message || `Ошибка при получении пользователя с ID ${id}`;
@@ -161,7 +161,7 @@ export const useUserStore = defineStore('user', {
     },
     
     // Обновление пользователя
-    async updateUser(id, userData) {
+    async updateUser(id, userDataFromForm) { 
       this.loading = true;
       this.error = null;
       
@@ -171,76 +171,82 @@ export const useUserStore = defineStore('user', {
           throw new Error('Не указан ID пользователя');
         }
         
-        console.log(`Обновление пользователя с ID: ${id}`, userData);
-        
-        // Подготавливаем данные для отправки на сервер
-        // Важно: API ожидает, что ID будет в теле запроса
-        const dataToSend = {
-          ...userData,
-          Id: parseInt(id) // Преобразуем ID в число, так как API ожидает числовой ID
+        console.log(`Обновление пользователя с ID: ${id}. Данные из формы:`, userDataFromForm);
+
+        // Подготавливаем данные для отправки на сервер согласно предоставленному Swagger (без permissions в теле)
+        const payloadForApi = {
+          UserName: userDataFromForm.UserName,
+          Role: userDataFromForm.Role,
+          FullName: userDataFromForm.FullName,
+          Phone: userDataFromForm.Phone,
+          Email: userDataFromForm.Email,
         };
-        
-        console.log('Данные для отправки:', dataToSend);
-        
-        let updatedUser = null;
-        let apiSuccess = false;
-        
+        if (userDataFromForm.Password && userDataFromForm.Password.trim() !== '') {
+          payloadForApi.Password = userDataFromForm.Password;
+        }
+        console.log('Данные для отправки в API (payloadForApi):', payloadForApi);
+
+        let responseFromApi = null;
         try {
-          // Пытаемся обновить через API
-          updatedUser = await updateUser(id, dataToSend);
-          apiSuccess = true;
-          console.log('Успешный ответ от API:', updatedUser);
-        } catch (apiError) {
-          console.warn(`Ошибка при обращении к API:`, apiError);
-          // Не выбрасываем исключение здесь, продолжаем выполнение
-        }
-        
-        // Если API-запрос не удался, обновляем пользователя локально
-        if (!apiSuccess) {
-          console.log('Обновляем пользователя локально после ошибки API');
-          
-          // Находим пользователя в локальном списке
-          const index = this.users.findIndex(user => parseInt(user.Id) === parseInt(id));
-          
+        console.log(`[userStore.js] updateUser: Вызов userApiUpdateUser с ID=${id} и payloadForApi:`, JSON.parse(JSON.stringify(payloadForApi)));
+        responseFromApi = await userApiUpdateUser(id, payloadForApi);
+        console.log(`[userStore.js] updateUser: Ответ от userApiUpdateUser (responseFromApi):`, JSON.parse(JSON.stringify(responseFromApi)));
+          console.log('Успешный ответ от API:', responseFromApi);
+
+          // API Успех: Обновляем локальное состояние данными от сервера
+      console.log('[userStore.js] updateUser: API вызов успешен. Обновляем локальное состояние.');
+      const index = this.users.findIndex(user => String(user.Id) === String(id));
           if (index !== -1) {
-            // Создаем обновленного пользователя, сохраняя существующие поля
-            updatedUser = {
-              ...this.users[index],
-              ...dataToSend
+            const updatedUserFromServer = {
+              Id: parseInt(id), // ID точно есть
+              UserName: responseFromApi.UserName !== undefined ? responseFromApi.UserName : this.users[index].UserName,
+              FullName: responseFromApi.FullName !== undefined ? responseFromApi.FullName : this.users[index].FullName,
+              Email: responseFromApi.Email !== undefined ? responseFromApi.Email : this.users[index].Email,
+              Phone: responseFromApi.Phone !== undefined ? responseFromApi.Phone : this.users[index].Phone,
+              Role: responseFromApi.Role !== undefined ? responseFromApi.Role : this.users[index].Role,
+              permissions: responseFromApi.permissions !== undefined ? responseFromApi.permissions : this.users[index].permissions,
             };
-            
-            // Обновляем пользователя в локальном списке
-            this.users[index] = updatedUser;
-            console.log(`Пользователь с ID ${id} обновлен локально:`, updatedUser);
+
+            this.users[index] = updatedUserFromServer;
+            if (this.currentUser && String(this.currentUser.Id) === String(id)) {
+              this.currentUser = updatedUserFromServer;
+            }
+            console.log(`[userStore.js] updateUser: Пользователь с ID ${id} обновлен в локальном списке данными от API. Результат:`, JSON.parse(JSON.stringify(updatedUserFromServer)));
+            return updatedUserFromServer; // Возвращаем обновленного пользователя
           } else {
-            // Если пользователя нет в списке, добавляем его
-            updatedUser = dataToSend;
-            this.users.push(updatedUser);
-            console.log(`Пользователь с ID ${id} добавлен в локальный список:`, updatedUser);
+            console.warn(`Пользователь с ID ${id} не найден в локальном списке после успешного API-запроса.`);
+            return responseFromApi; // Возвращаем то, что пришло от API
           }
-        } else {
-          // Если API-запрос успешен, обновляем пользователя в локальном списке
-          const index = this.users.findIndex(user => parseInt(user.Id) === parseInt(id));
-          
+
+        } catch (apiError) {
+          this.error = apiError.message || 'Ошибка при обновлении пользователя через API';
+      console.error(`[userStore.js] updateUser: Ошибка API при обновлении пользователя ID ${id}. Объект ошибки:`, apiError);
+      // Попытка вывести больше деталей, если это Axios ошибка
+      if (apiError.response) {
+        console.error(`[userStore.js] updateUser: Ошибка API - Статус: ${apiError.response.status}, Данные:`, apiError.response.data);
+      }
+
+          // API Ошибка: Обновляем локальное состояние "визуально" данными из формы
+          const index = this.users.findIndex(user => String(user.Id) === String(id));
           if (index !== -1) {
-            // Обновляем существующего пользователя
-            this.users[index] = updatedUser;
-            console.log(`Пользователь с ID ${id} обновлен в локальном списке после успешного API-запроса`);
-          } else {
-            // Если пользователя нет в списке, добавляем его
-            this.users.push(updatedUser);
-            console.log(`Пользователь с ID ${id} добавлен в локальный список после успешного API-запроса`);
+            const visuallyUpdatedUser = {
+              ...this.users[index], // Начинаем с существующих данных пользователя
+              UserName: userDataFromForm.UserName,
+              FullName: userDataFromForm.FullName,
+              Email: userDataFromForm.Email,
+              Phone: userDataFromForm.Phone,
+              Role: userDataFromForm.Role,
+              permissions: userDataFromForm.permissions || this.users[index].permissions, // Используем permissions из формы
+            };
+            this.users[index] = visuallyUpdatedUser;
+
+            if (this.currentUser && String(this.currentUser.Id) === String(id)) {
+              this.currentUser = visuallyUpdatedUser;
+            }
+            console.log(`Пользователь с ID ${id} обновлен локально (визуально) после ошибки API.`);
           }
+          throw apiError; // Пробрасываем ошибку, чтобы компонент мог ее обработать
         }
-        
-        // Обновляем текущего пользователя, если обновляем его
-        if (this.currentUser && parseInt(this.currentUser.Id) === parseInt(id)) {
-          this.currentUser = updatedUser;
-          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-          console.log(`Обновлен текущий пользователь`);
-        }
-        
-        return updatedUser;
       } catch (error) {
         this.error = error.message || `Ошибка при обновлении пользователя`;
         console.error(`Ошибка при обновлении пользователя с ID ${id}:`, error);
@@ -363,10 +369,9 @@ export const useUserStore = defineStore('user', {
       }
     },
     
-    // Обновление существующего пользователя
-    updateUser(id, userData) {
+    // Обновление существующего пользователя (локально)
+    updateUserLocal(id, userData) {
       try {
-        // В реальном приложении здесь будет запрос к API
         const index = this.users.findIndex(u => u.Id === id);
         
         if (index !== -1) {

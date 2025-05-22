@@ -146,25 +146,19 @@ async function saveUser(userData) {
       const result = await userStore.updateUser(selectedUser.value.Id, userData);
       
       if (result) {
-        alert(`Пользователь ${userData.UserName} успешно обновлен`);
         showUserModal.value = false;
-      } else {
-        alert(`Ошибка при обновлении пользователя: ${userStore.error}`);
       }
     } else {
       // Создание нового пользователя
       const result = await userStore.createUser(userData);
       
       if (result) {
-        alert(`Пользователь ${userData.UserName} успешно создан`);
         showUserModal.value = false;
-      } else {
-        alert(`Ошибка при создании пользователя: ${userStore.error}`);
       }
     }
   } catch (error) {
     console.error('Ошибка при сохранении пользователя:', error);
-    alert(`Ошибка при сохранении пользователя: ${error.message || 'Неизвестная ошибка'}`);
+
   }
 }
 
