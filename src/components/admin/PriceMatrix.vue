@@ -75,9 +75,50 @@ onMounted(() => {
 });
 
 // Наблюдение за изменением входных данных
-watch(() => [props.visitObjects, props.categoryVisitors, props.modelValue, props.baseCost], () => {
+watch([() => props.visitObjects.length, () => props.categoryVisitors.length], () => {
+  console.log('Изменилось количество объектов или категорий');
   initializePriceMatrix();
-}, { deep: true });
+});
+
+// Наблюдение за изменением модели цен
+watch(() => props.modelValue.length, () => {
+  console.log('Изменилось количество цен');
+  // Инициализируем матрицу только если она пустая
+  if (Object.keys(priceMatrix.value).length === 0) {
+    initializePriceMatrix();
+  }
+});
+
+// Отдельное наблюдение за изменением базовой стоимости
+watch(() => props.baseCost, (newCost) => {
+  console.log('Изменена базовая стоимость:', newCost);
+  
+  // Если нет выбранных объектов или категорий, не обновляем матрицу
+  if (selectedVisitObjects.value.length === 0 || selectedCategoryVisitors.value.length === 0) {
+    return;
+  }
+  
+  // Обновляем цены в матрице
+  selectedVisitObjects.value.forEach(object => {
+    selectedCategoryVisitors.value.forEach(category => {
+      const key = getPriceKey(object.VisitObjectId, category.CategoryVisitorId);
+      
+      // Ищем существующую цену в массиве цен
+      const existingPrice = props.modelValue.find(
+        price => price.VisitObjectId === object.VisitObjectId && 
+                price.CategoryVisitorId === category.CategoryVisitorId
+      );
+      
+      // Если цены еще нет или она равна предыдущей базовой стоимости, обновляем её
+      if (!existingPrice || !existingPrice.Cost) {
+        priceMatrix.value[key] = newCost;
+      }
+    });
+  });
+  
+  // Обновляем все цены
+  updateAllPrices();
+});
 
 // Инициализация матрицы цен
 function initializePriceMatrix() {
@@ -101,6 +142,9 @@ function initializePriceMatrix() {
   });
   
   priceMatrix.value = newMatrix;
+  
+  // Если матрица изменилась, обновляем цены в модели
+  updateAllPrices();
 }
 
 // Получение ключа для матрицы цен
@@ -139,6 +183,58 @@ function updatePrice(objectId, categoryId) {
   
   // Отправляем обновленный массив цен
   emit('update:modelValue', updatedPrices);
+}
+
+// Обновление всех цен при изменении базовой стоимости
+function updateAllPrices() {
+  // Проверяем, есть ли объекты и категории
+  if (selectedVisitObjects.value.length === 0 || selectedCategoryVisitors.value.length === 0) {
+    return;
+  }
+  
+  // Создаем новый массив цен
+  const updatedPrices = [];
+  
+  // Создаем карту существующих цен для быстрого поиска
+  const existingPricesMap = {};
+  props.modelValue.forEach(price => {
+    const key = getPriceKey(price.VisitObjectId, price.CategoryVisitorId);
+    existingPricesMap[key] = price;
+  });
+  
+  // Проходим по всем объектам и категориям
+  selectedVisitObjects.value.forEach(object => {
+    selectedCategoryVisitors.value.forEach(category => {
+      const objectId = object.VisitObjectId;
+      const categoryId = category.CategoryVisitorId;
+      const key = getPriceKey(objectId, categoryId);
+      const cost = parseFloat(priceMatrix.value[key]);
+      
+      // Ищем существующую цену
+      const existingPrice = existingPricesMap[key];
+      
+      if (existingPrice) {
+        // Обновляем существующую цену
+        updatedPrices.push({
+          ...existingPrice,
+          Cost: cost
+        });
+      } else {
+        // Добавляем новую цену
+        updatedPrices.push({
+          VisitObjectId: objectId,
+          CategoryVisitorId: categoryId,
+          Cost: cost,
+          ServiceId: null
+        });
+      }
+    });
+  });
+  
+  // Отправляем обновленный массив цен только если он отличается
+  if (JSON.stringify(updatedPrices) !== JSON.stringify(props.modelValue)) {
+    emit('update:modelValue', updatedPrices);
+  }
 }
 </script>
 

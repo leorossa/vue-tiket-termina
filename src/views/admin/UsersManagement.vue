@@ -24,344 +24,175 @@
           <label for="roleFilter">Роль:</label>
           <select id="roleFilter" v-model="roleFilter" class="admin-select">
             <option value="">Все роли</option>
-            <option value="admin">Администратор</option>
-            <option value="manager">Менеджер</option>
-            <option value="cashier">Кассир</option>
+            <option v-for="role in availableRoles" :key="role.id" :value="role.id">
+              {{ role.name }}
+            </option>
           </select>
         </div>
       </div>
 
-      <!-- Таблица пользователей -->
-      <div v-if="loading" class="text-center p-4">
-        <p>Загрузка данных...</p>
-      </div>
-      <div v-else class="admin-table-responsive">
-        <table class="admin-table" v-if="filteredUsers.length > 0">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Имя</th>
-              <th>Email</th>
-              <th>Роль</th>
-              <th>Статус</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in filteredUsers" :key="user.id">
-              <td>{{ user.id }}</td>
-              <td>{{ user.name }}</td>
-              <td>{{ user.email }}</td>
-              <td>
-                <div class="admin-badge primary">
-                  {{ getRoleName(user.role) }}
-                </div>
-              </td>
-              <td>
-                <div :class="['admin-badge', user.active ? 'success' : 'danger']">
-                  {{ user.active ? 'Активен' : 'Заблокирован' }}
-                </div>
-              </td>
-              <td>
-                <div class="admin-button-group">
-                  <button @click="editUser(user)" class="admin-button secondary">
-                    Редактировать
-                  </button>
-                  <button 
-                    @click="toggleUserStatus(user)" 
-                    :class="['admin-button', user.active ? 'danger' : 'success']"
-                  >
-                    {{ user.active ? 'Заблокировать' : 'Активировать' }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-else class="text-center p-4">
-          <p>Пользователи не найдены. Создайте нового пользователя.</p>
-        </div>
-      </div>
-    </div>
+      <!-- Список пользователей -->
+      <UserList 
+        :users="filteredUsers" 
+        :loading="loading" 
+        @edit="openEditUserModal" 
+        @delete="confirmDeleteUser"
+      />
 
-    <!-- Модальное окно создания/редактирования пользователя -->
-    <div v-if="showUserModal" class="admin-modal-backdrop" @click.self="showUserModal = false">
-      <div class="admin-modal">
-        <div class="admin-modal-header">
-          <h3 class="admin-modal-title">{{ isEditing ? 'Редактирование пользователя' : 'Создание нового пользователя' }}</h3>
-          <button @click="showUserModal = false" class="admin-button secondary icon">✕</button>
-        </div>
-        <div class="admin-modal-body">
-          <form @submit.prevent="saveUser">
-            <!-- Основная информация -->
-            <div class="admin-form-group">
-              <label for="userName">Имя пользователя:</label>
-              <input
-                id="userName"
-                v-model="currentUser.name"
-                type="text"
-                required
-                class="admin-input"
-              />
-            </div>
-            
-            <div class="admin-form-group">
-              <label for="userEmail">Email:</label>
-              <input
-                id="userEmail"
-                v-model="currentUser.email"
-                type="email"
-                required
-                class="admin-input"
-              />
-            </div>
+      <!-- Форма создания/редактирования пользователя -->
+      <UserForm 
+        v-if="showUserModal" 
+        :user="selectedUser" 
+        :is-editing="isEditing" 
+        @close="closeUserModal" 
+        @save="saveUser"
+      />
 
-            <div class="admin-form-group">
-              <label for="userPassword">Пароль:</label>
-              <input
-                id="userPassword"
-                v-model="currentUser.password"
-                type="password"
-                :required="!isEditing"
-                class="admin-input"
-                :placeholder="isEditing ? 'Оставьте пустым, чтобы не менять' : 'Введите пароль'"
-              />
-            </div>
-
-            <div class="admin-form-group">
-              <label for="userRole">Роль:</label>
-              <select id="userRole" v-model="currentUser.role" required class="admin-select">
-                <option value="admin">Администратор</option>
-                <option value="manager">Менеджер</option>
-                <option value="cashier">Кассир</option>
-              </select>
-            </div>
-
-            <!-- Права доступа -->
-            <div class="admin-form-group">
-              <label>Права доступа:</label>
-              <div class="admin-card">
-                <div class="d-flex flex-column">
-                  <label class="d-flex align-items-center mb-2">
-                    <input type="checkbox" v-model="currentUser.permissions.canManageUsers" class="admin-checkbox" />
-                    <span>Управление пользователями</span>
-                  </label>
-                  <label class="d-flex align-items-center mb-2">
-                    <input type="checkbox" v-model="currentUser.permissions.canManageServices" class="admin-checkbox" />
-                    <span>Управление услугами</span>
-                  </label>
-                  <label class="d-flex align-items-center mb-2">
-                    <input type="checkbox" v-model="currentUser.permissions.canViewReports" class="admin-checkbox" />
-                    <span>Просмотр отчетов</span>
-                  </label>
-                  <label class="d-flex align-items-center mb-2">
-                    <input type="checkbox" v-model="currentUser.permissions.canManageSettings" class="admin-checkbox" />
-                    <span>Управление настройками</span>
-                  </label>
-                  <label class="d-flex align-items-center">
-                    <input type="checkbox" v-model="currentUser.permissions.canSellTickets" class="admin-checkbox" />
-                    <span>Продажа билетов</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div class="admin-modal-footer">
-          <button @click="showUserModal = false" class="admin-button secondary">Отмена</button>
-          <button @click="saveUser" class="admin-button primary">Сохранить</button>
-        </div>
-      </div>
+      <!-- Модальное окно подтверждения удаления -->
+      <DeleteConfirmation
+        v-if="showDeleteConfirmModal"
+        :item-name="userToDelete ? userToDelete.UserName : ''"
+        :item-type="'пользователя'"
+        @confirm="deleteUser"
+        @cancel="cancelDelete"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useUserStore } from '@/stores/userStore';
+import UserList from '@/components/admin/UserList.vue';
+import UserForm from '@/components/admin/UserForm.vue';
+import DeleteConfirmation from '@/components/admin/DeleteConfirmation.vue';
 
-// Состояние компонента
-const users = ref([
-  {
-    id: 1,
-    name: 'Администратор',
-    email: 'admin@example.com',
-    role: 'admin',
-    active: true,
-    permissions: {
-      canManageUsers: true,
-      canManageServices: true,
-      canViewReports: true,
-      canManageSettings: true,
-      canSellTickets: true
-    }
-  },
-  {
-    id: 2,
-    name: 'Менеджер',
-    email: 'manager@example.com',
-    role: 'manager',
-    active: true,
-    permissions: {
-      canManageUsers: false,
-      canManageServices: true,
-      canViewReports: true,
-      canManageSettings: false,
-      canSellTickets: true
-    }
-  },
-  {
-    id: 3,
-    name: 'Кассир',
-    email: 'cashier@example.com',
-    role: 'cashier',
-    active: true,
-    permissions: {
-      canManageUsers: false,
-      canManageServices: false,
-      canViewReports: false,
-      canManageSettings: false,
-      canSellTickets: true
-    }
-  }
-]);
+// Инициализация хранилища пользователей
+const userStore = useUserStore();
 
+// Состояния компонента
 const searchQuery = ref('');
 const roleFilter = ref('');
+const loading = computed(() => userStore.loading);
+const users = computed(() => userStore.users);
+const availableRoles = computed(() => userStore.availableRoles);
+
 const showUserModal = ref(false);
+const showDeleteConfirmModal = ref(false);
+const selectedUser = ref(null);
+const userToDelete = ref(null);
 const isEditing = ref(false);
-const loading = ref(false);
 
-// Текущий редактируемый пользователь
-const currentUser = reactive({
-  id: null,
-  name: '',
-  email: '',
-  password: '',
-  role: 'cashier',
-  active: true,
-  permissions: {
-    canManageUsers: false,
-    canManageServices: false,
-    canViewReports: false,
-    canManageSettings: false,
-    canSellTickets: true
-  }
-});
-
-// Отфильтрованные пользователи
+// Фильтрация пользователей
 const filteredUsers = computed(() => {
-  let result = users.value;
-  
-  // Фильтрация по поисковому запросу
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter(user => 
-      user.name.toLowerCase().includes(query) || 
-      user.email.toLowerCase().includes(query)
-    );
-  }
-  
-  // Фильтрация по роли
-  if (roleFilter.value) {
-    result = result.filter(user => user.role === roleFilter.value);
-  }
-  
-  return result;
+  return users.value.filter(user => {
+    const matchesSearch = searchQuery.value === '' || 
+      (user.UserName && user.UserName.toLowerCase().includes(searchQuery.value.toLowerCase())) || 
+      (user.Email && user.Email.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
+      (user.FullName && user.FullName.toLowerCase().includes(searchQuery.value.toLowerCase()));
+    
+    const matchesRole = roleFilter.value === '' || user.Role === roleFilter.value;
+    
+    return matchesSearch && matchesRole;
+  });
 });
 
-// Получение названия роли
-function getRoleName(role) {
-  const roleNames = {
-    admin: 'Администратор',
-    manager: 'Менеджер',
-    cashier: 'Кассир'
-  };
-  
-  return roleNames[role] || role;
-}
+// Загрузка пользователей при монтировании компонента
+onMounted(async () => {
+  try {
+    await userStore.fetchUsers();
+  } catch (error) {
+    console.error('Ошибка при загрузке пользователей:', error);
+  }
+});
 
-// Методы для работы с пользователями
+// Открытие модального окна создания пользователя
 function openCreateUserModal() {
-  // Сброс формы
-  Object.assign(currentUser, {
-    id: null,
-    name: '',
-    email: '',
-    password: '',
-    role: 'cashier',
-    active: true,
-    permissions: {
-      canManageUsers: false,
-      canManageServices: false,
-      canViewReports: false,
-      canManageSettings: false,
-      canSellTickets: true
-    }
-  });
-  
+  selectedUser.value = null;
   isEditing.value = false;
   showUserModal.value = true;
 }
 
-function editUser(user) {
-  // Копирование данных пользователя в форму
-  Object.assign(currentUser, {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    password: '', // Пароль не отображаем
-    role: user.role,
-    active: user.active,
-    permissions: { ...user.permissions }
-  });
-  
+// Открытие модального окна редактирования пользователя
+function openEditUserModal(user) {
+  selectedUser.value = { ...user };
   isEditing.value = true;
   showUserModal.value = true;
 }
 
-function toggleUserStatus(user) {
-  // Изменение статуса пользователя
-  user.active = !user.active;
-  console.log(`Статус пользователя ${user.name} изменен на ${user.active ? 'активен' : 'заблокирован'}`);
+// Закрытие модального окна
+function closeUserModal() {
+  showUserModal.value = false;
 }
 
-function saveUser() {
+// Подтверждение удаления пользователя
+function confirmDeleteUser(user) {
+  userToDelete.value = user;
+  showDeleteConfirmModal.value = true;
+}
+
+// Отмена удаления
+function cancelDelete() {
+  showDeleteConfirmModal.value = false;
+  userToDelete.value = null;
+}
+
+// Сохранение пользователя
+async function saveUser(userData) {
   try {
     if (isEditing.value) {
-      // Обновление существующего пользователя
-      const index = users.value.findIndex(u => u.id === currentUser.id);
-      if (index !== -1) {
-        // Если пароль не указан, не обновляем его
-        const updatedUser = {
-          ...currentUser,
-          password: currentUser.password ? currentUser.password : users.value[index].password
-        };
-        users.value[index] = updatedUser;
-      }
+      console.log(`Обновление пользователя с ID: ${selectedUser.value.Id}`, userData);
+      // Обновление пользователя - используем Id
+      const result = await userStore.updateUser(selectedUser.value.Id, userData);
       
-      console.log('Пользователь обновлен:', currentUser);
+      if (result) {
+        alert(`Пользователь ${userData.UserName} успешно обновлен`);
+        showUserModal.value = false;
+      } else {
+        alert(`Ошибка при обновлении пользователя: ${userStore.error}`);
+      }
     } else {
       // Создание нового пользователя
-      const newUser = {
-        ...currentUser,
-        id: Math.max(0, ...users.value.map(u => u.id)) + 1
-      };
+      const result = await userStore.createUser(userData);
       
-      users.value.push(newUser);
-      
-      console.log('Новый пользователь создан:', newUser);
+      if (result) {
+        alert(`Пользователь ${userData.UserName} успешно создан`);
+        showUserModal.value = false;
+      } else {
+        alert(`Ошибка при создании пользователя: ${userStore.error}`);
+      }
     }
-    
-    // Закрытие модального окна
-    showUserModal.value = false;
   } catch (error) {
     console.error('Ошибка при сохранении пользователя:', error);
+    alert(`Ошибка при сохранении пользователя: ${error.message || 'Неизвестная ошибка'}`);
   }
 }
 
-// Загрузка данных при монтировании компонента
-onMounted(() => {
-  // В реальном приложении здесь будет загрузка пользователей с сервера
-  console.log('Компонент управления пользователями загружен');
-});
+// Удаление пользователя
+async function deleteUser() {
+  try {
+    if (userToDelete.value) {
+      await userStore.deleteUser(userToDelete.value.Id);
+      showDeleteConfirmModal.value = false;
+      userToDelete.value = null;
+    }
+  } catch (error) {
+    console.error(`Ошибка при удалении пользователя:`, error);
+    // Здесь можно добавить отображение ошибки пользователю
+  }
+}
 </script>
+
+<style scoped>
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

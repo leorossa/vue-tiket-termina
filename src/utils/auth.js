@@ -1,26 +1,18 @@
 // Утилиты для работы с аутентификацией
+// Этот файл оставлен для обратной совместимости
+// Вся логика авторизации перенесена в authStore.js
+
+import { useAuthStore } from '@/stores/authStore';
 
 /**
  * Получение заголовков авторизации для запросов к API
  * @returns {Object} Объект с заголовками авторизации
  */
 export function getAuthHeaders() {
-  // Получаем токен из localStorage или другого хранилища
-  const token = localStorage.getItem('auth_token');
-  
-  // Если токен есть, добавляем его в заголовки
-  if (token) {
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-  }
-  
-  // Если токена нет, возвращаем только Content-Type
-  return {
-    'Content-Type': 'application/json'
-  };
-}
+  // Используем геттер из хранилища аутентификации
+  const authStore = useAuthStore();
+  return authStore.authHeaders;
+};
 
 /**
  * Проверка, авторизован ли пользователь
