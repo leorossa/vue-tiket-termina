@@ -13,6 +13,10 @@
           <i class="admin-sidebar-icon">🎫</i>
           <span>Услуги</span>
         </router-link>
+        <router-link to="/admin/orders" class="admin-sidebar-item">
+          <i class="admin-sidebar-icon">📋</i>
+          <span>Заказы</span>
+        </router-link>
         <router-link to="/admin/category-visitors" class="admin-sidebar-item">
           <i class="admin-sidebar-icon">👪</i>
           <span>Категории посетителей</span>

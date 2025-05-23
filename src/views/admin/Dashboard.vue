@@ -55,8 +55,8 @@
     <div class="admin-card mb-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="admin-card-title">Последние продажи</h3>
-        <router-link to="/admin/sales" class="admin-button secondary">
-          Все продажи
+        <router-link to="/admin/orders" class="admin-button secondary">
+          Все заказы
         </router-link>
       </div>
       
@@ -111,95 +111,101 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useOrderStore } from '@/stores/orderStore';
+import { getOrdersByDateRange } from '@/api/orderApi';
+
+// Инициализация хранилища заказов
+const orderStore = useOrderStore();
+
+// Состояние загрузки
+const loading = ref(false);
+const error = ref(null);
 
 // Статистика
 const stats = ref({
-  todaySales: '45 600',
-  todayTickets: 89,
-  weeklySales: '312 450',
-  weeklyTickets: 623,
-  monthlySales: '1 254 800',
-  monthlyTickets: 2541,
-  totalServices: 12,
-  activeServices: 10
+  todaySales: '0',
+  todayTickets: 0,
+  weeklySales: '0',
+  weeklyTickets: 0,
+  monthlySales: '0',
+  monthlyTickets: 0,
+  totalServices: 0,
+  activeServices: 0
 });
 
 // Данные для графика продаж (в процентах)
-const salesData = ref([30, 45, 60, 70, 55, 80, 65]);
+const salesData = ref([0, 0, 0, 0, 0, 0, 0]);
 const weekDays = ref(['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']);
 
 // Последние продажи
-const recentSales = ref([
-  {
-    id: 1001,
-    date: new Date(2025, 4, 15, 14, 30),
-    serviceName: 'Входной билет в парк',
-    clientName: 'Иванов И.И.',
-    amount: 500,
-    status: 'completed'
-  },
-  {
-    id: 1000,
-    date: new Date(2025, 4, 15, 14, 15),
-    serviceName: 'Аттракцион "Американские горки"',
-    clientName: 'Петров П.П.',
-    amount: 300,
-    status: 'completed'
-  },
-  {
-    id: 999,
-    date: new Date(2025, 4, 15, 13, 45),
-    serviceName: 'Входной билет в парк',
-    clientName: 'Сидоров С.С.',
-    amount: 500,
-    status: 'completed'
-  },
-  {
-    id: 998,
-    date: new Date(2025, 4, 15, 13, 30),
-    serviceName: 'Комплексный билет',
-    clientName: 'Козлов К.К.',
-    amount: 1200,
-    status: 'refunded'
-  },
-  {
-    id: 997,
-    date: new Date(2025, 4, 15, 13, 15),
-    serviceName: 'Детская карусель',
-    clientName: 'Николаев Н.Н.',
-    amount: 200,
-    status: 'completed'
-  }
-]);
+const recentSales = ref([]);
+
+// Преобразование данных заказов для отображения в таблице
+const formatOrdersForDisplay = (orders) => {
+  return orders.map(order => ({
+    id: order.OrderId,
+    date: new Date(),  // Используем текущую дату, так как в API нет даты создания заказа
+    serviceName: order.Service && order.Service.length > 0 ? order.Service[0].ServiceName : 'Неизвестная услуга',
+    clientName: order.VisitorName1 || 'Неизвестный клиент',
+    amount: order.Cost,
+    status: mapOrderStatusToDisplay(order.OrderStateId)
+  }));
+};
+
+// Преобразование статуса заказа в формат для отображения
+const mapOrderStatusToDisplay = (statusId) => {
+  const statusMap = {
+    0: 'pending',   // Новый
+    1: 'completed', // Оплачен
+    2: 'cancelled', // Отменен
+    3: 'refunded',  // Возвращен
+    4: 'completed'  // Использован
+  };
+  
+  return statusMap[statusId] || 'pending';
+};
 
 // Популярные услуги
-const popularServices = ref([
-  {
-    id: 1,
-    name: 'Входной билет в парк',
-    sales: 1250,
-    percentage: 45
-  },
-  {
-    id: 2,
-    name: 'Аттракцион "Американские горки"',
-    sales: 850,
-    percentage: 30
-  },
-  {
-    id: 3,
-    name: 'Детская карусель',
-    sales: 420,
-    percentage: 15
-  },
-  {
-    id: 4,
-    name: 'Комплексный билет',
-    sales: 280,
-    percentage: 10
-  }
-]);
+const popularServices = ref([]);
+
+// Функция для расчета популярных услуг на основе заказов
+const calculatePopularServices = (orders) => {
+  // Создаем объект для подсчета количества продаж каждой услуги
+  const serviceCounts = {};
+  let totalSales = 0;
+  
+  // Проходим по всем заказам и их услугам
+  orders.forEach(order => {
+    if (order.Service && order.Service.length > 0) {
+      order.Service.forEach(service => {
+        const serviceId = service.ServiceId;
+        const serviceName = service.ServiceName;
+        const serviceCount = service.ServiceCount || 1;
+        
+        if (!serviceCounts[serviceId]) {
+          serviceCounts[serviceId] = {
+            id: serviceId,
+            name: serviceName,
+            sales: 0
+          };
+        }
+        
+        serviceCounts[serviceId].sales += serviceCount;
+        totalSales += serviceCount;
+      });
+    }
+  });
+  
+  // Преобразуем объект в массив и сортируем по количеству продаж
+  const servicesArray = Object.values(serviceCounts).sort((a, b) => b.sales - a.sales);
+  
+  // Вычисляем процент для каждой услуги и берем только топ-4
+  return servicesArray.slice(0, 4).map(service => ({
+    ...service,
+    percentage: totalSales > 0 ? Math.round((service.sales / totalSales) * 100) : 0
+  }));
+};
 
 // Форматирование даты
 function formatDate(date) {
@@ -236,9 +242,182 @@ function getStatusName(status) {
   return statusNames[status] || status;
 }
 
+// Загрузка данных о заказах
+async function loadOrderData() {
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    // Получаем текущую дату
+    const today = new Date();
+    
+    // Получаем дату месяц назад
+    const monthAgo = new Date();
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
+    
+    // Форматируем даты для API
+    const dtEnd = today.toISOString().split('T')[0];
+    const dtBegin = monthAgo.toISOString().split('T')[0];
+    
+    // Загружаем заказы за последний месяц
+    const response = await getOrdersByDateRange(dtBegin, dtEnd);
+    const orders = response.Order || [];
+    
+    // Обновляем данные в хранилище
+    orderStore.orders = orders;
+    
+    // Обрабатываем полученные данные
+    processOrderData(orders);
+  } catch (err) {
+    console.error('Ошибка при загрузке данных о заказах:', err);
+    error.value = 'Не удалось загрузить данные о заказах';
+  } finally {
+    loading.value = false;
+  }
+}
+
+// Обработка данных о заказах
+function processOrderData(orders) {
+  if (!orders || orders.length === 0) return;
+  
+  // Получаем текущую дату
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Получаем дату неделю назад
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  
+  // Получаем дату месяц назад
+  const monthAgo = new Date(today);
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  
+  // Фильтруем заказы по датам
+  // Примечание: в API нет даты создания заказа, поэтому используем DtVisit из первой услуги
+  const todayOrders = orders.filter(order => {
+    if (!order.Service || order.Service.length === 0) return false;
+    const visitDate = new Date(order.Service[0].DtVisit);
+    return visitDate >= today;
+  });
+  
+  const weekOrders = orders.filter(order => {
+    if (!order.Service || order.Service.length === 0) return false;
+    const visitDate = new Date(order.Service[0].DtVisit);
+    return visitDate >= weekAgo;
+  });
+  
+  const monthOrders = orders; // Все заказы за месяц
+  
+  // Рассчитываем статистику
+  const todaySalesAmount = todayOrders.reduce((sum, order) => sum + order.Cost, 0);
+  const weeklySalesAmount = weekOrders.reduce((sum, order) => sum + order.Cost, 0);
+  const monthlySalesAmount = monthOrders.reduce((sum, order) => sum + order.Cost, 0);
+  
+  // Обновляем статистику
+  stats.value = {
+    todaySales: formatCurrency(todaySalesAmount),
+    todayTickets: todayOrders.length,
+    weeklySales: formatCurrency(weeklySalesAmount),
+    weeklyTickets: weekOrders.length,
+    monthlySales: formatCurrency(monthlySalesAmount),
+    monthlyTickets: monthOrders.length,
+    totalServices: calculateTotalServices(orders),
+    activeServices: calculateActiveServices(orders)
+  };
+  
+  // Обновляем данные для графика продаж
+  updateSalesChart(orders);
+  
+  // Обновляем список последних продаж
+  recentSales.value = formatOrdersForDisplay(orders.slice(0, 5));
+  
+  // Обновляем список популярных услуг
+  popularServices.value = calculatePopularServices(orders);
+}
+
+// Рассчитываем общее количество уникальных услуг
+function calculateTotalServices(orders) {
+  const uniqueServices = new Set();
+  
+  orders.forEach(order => {
+    if (order.Service && order.Service.length > 0) {
+      order.Service.forEach(service => {
+        uniqueServices.add(service.ServiceId);
+      });
+    }
+  });
+  
+  return uniqueServices.size;
+}
+
+// Рассчитываем количество активных услуг (не отмененных)
+function calculateActiveServices(orders) {
+  const activeServices = new Set();
+  
+  orders.forEach(order => {
+    if (order.Service && order.Service.length > 0) {
+      order.Service.forEach(service => {
+        // Если услуга не отменена (нет даты отмены)
+        if (!service.dtDrop) {
+          activeServices.add(service.ServiceId);
+        }
+      });
+    }
+  });
+  
+  return activeServices.size;
+}
+
+// Обновляем данные для графика продаж
+function updateSalesChart(orders) {
+  // Получаем текущую дату
+  const today = new Date();
+  
+  // Определяем день недели (0 - воскресенье, 1 - понедельник, ...)
+  const currentDayOfWeek = today.getDay();
+  
+  // Создаем массив с данными продаж за каждый день недели
+  const salesByDay = [0, 0, 0, 0, 0, 0, 0];
+  
+  // Проходим по всем заказам
+  orders.forEach(order => {
+    if (!order.Service || order.Service.length === 0) return;
+    
+    const visitDate = new Date(order.Service[0].DtVisit);
+    const dayOfWeek = visitDate.getDay();
+    
+    // Проверяем, что дата посещения находится в пределах текущей недели
+    const dayDiff = Math.floor((today - visitDate) / (1000 * 60 * 60 * 24));
+    if (dayDiff <= 6) {
+      // Преобразуем день недели из формата JavaScript (0-6, где 0 - воскресенье)
+      // в формат нашего массива (0-6, где 0 - понедельник)
+      const adjustedDayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
+      salesByDay[adjustedDayIndex] += order.Cost;
+    }
+  });
+  
+  // Находим максимальное значение продаж за день
+  const maxSales = Math.max(...salesByDay);
+  
+  // Преобразуем абсолютные значения в проценты для графика
+  salesData.value = salesByDay.map(sales => {
+    if (maxSales === 0) return 0;
+    return Math.round((sales / maxSales) * 100);
+  });
+}
+
+// Форматирование валюты
+function formatCurrency(value) {
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
 onMounted(() => {
-  // В реальном приложении здесь будет загрузка данных с сервера
-  console.log('Дашборд загружен');
+  // Загружаем данные о заказах при монтировании компонента
+  loadOrderData();
 });
 </script>
 

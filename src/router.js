@@ -9,6 +9,7 @@ import Settings from '@/views/admin/Settings.vue';
 import CategoryVisitorManagement from '@/views/admin/CategoryVisitorManagement.vue';
 import VisitObjectManagement from '@/views/admin/VisitObjectManagement.vue';
 import LogsManagement from '@/views/admin/LogsManagement.vue';
+import OrdersManagement from '@/views/admin/OrdersManagement.vue';
 import Login from '@/views/Login.vue';
 
 // Импорт хранилища аутентификации
@@ -75,6 +76,12 @@ const routes = [
         name: 'admin-logs',
         component: LogsManagement,
         meta: { requiresAuth: true, requiresAdminRole: true }
+      },
+      {
+        path: 'orders',
+        name: 'admin-orders',
+        component: OrdersManagement,
+        meta: { requiresAuth: true }
       }
       // Здесь будут другие маршруты админ-панели
     ]
