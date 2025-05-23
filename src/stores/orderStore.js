@@ -15,11 +15,10 @@ export const useOrderStore = defineStore('order', () => {
   });
 
   const orderStatusMap = {
-    0: 'Новый',
-    1: 'Оплачен',
-    2: 'Отменен',
-    3: 'Возвращен',
-    4: 'Использован'
+    1: 'Выдан',
+    2: 'Возвращен',
+    4: 'Заказан',
+    5: 'Оплачен',
   };
 
   const getStatusName = (statusId) => {
