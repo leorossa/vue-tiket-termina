@@ -129,14 +129,14 @@
               <button 
                 @click="openStatusModal(order)" 
                 class="admin-button sm primary"
-                title="Изменить статус"
+                title="Изменить статус (локально)"
               >
                 📝
               </button>
               <button 
                 @click="confirmCancelOrder(order)" 
                 class="admin-button sm danger"
-                title="Отменить заказ"
+                title="Удалить из списка (локально)"
                 :disabled="order.OrderStateId === 2 || order.OrderStateId === 3"
               >
                 ❌
@@ -289,8 +289,8 @@
           <button @click="showStatusModal = false" class="admin-button secondary">
             Отмена
           </button>
-          <button @click="changeStatus" class="admin-button primary" :disabled="orderStore.loading">
-            Сохранить
+          <button @click="changeStatus" class="admin-button primary">
+            Сохранить (локально)
           </button>
         </div>
       </div>
@@ -305,18 +305,18 @@
         </div>
         <div class="admin-modal-body">
           <p class="confirmation-message">
-            Вы действительно хотите отменить заказ #{{ selectedOrder.OrderId }}?
+            Вы действительно хотите удалить заказ #{{ selectedOrder.OrderId }} из списка?
           </p>
           <p class="warning-message">
-            Это действие нельзя отменить.
+            Это действие удалит заказ только из локального списка, но не из базы данных.
           </p>
         </div>
         <div class="admin-modal-footer">
           <button @click="showCancelConfirmation = false" class="admin-button secondary">
             Нет, оставить
           </button>
-          <button @click="cancelOrder" class="admin-button danger" :disabled="orderStore.loading">
-            Да, отменить заказ
+          <button @click="removeOrder" class="admin-button danger">
+            Да, удалить из списка
           </button>
         </div>
       </div>
@@ -458,36 +458,33 @@ function openStatusModal(order) {
   showStatusModal.value = true;
 }
 
-// Изменение статуса заказа
-async function changeStatus() {
+// Изменение статуса заказа (только локально, без API-вызова)
+function changeStatus() {
   if (newStatusId.value === selectedOrder.value.OrderStateId) {
     showStatusModal.value = false;
     return;
   }
   
-  const success = await orderStore.changeOrderStatus(selectedOrder.value.OrderId, newStatusId.value);
+  // Обновляем статус только локально
+  orderStore.updateOrderStatusLocally(selectedOrder.value.OrderId, newStatusId.value);
   
-  if (success) {
-    // Обновляем статус в выбранном заказе
-    selectedOrder.value.OrderStateId = newStatusId.value;
-  }
+  // Обновляем статус в выбранном заказе
+  selectedOrder.value.OrderStateId = newStatusId.value;
   
   showStatusModal.value = false;
 }
 
-// Открытие модального окна подтверждения отмены заказа
+// Открытие модального окна подтверждения удаления заказа из списка
 function confirmCancelOrder(order) {
   selectedOrder.value = { ...order };
   showCancelConfirmation.value = true;
 }
 
-// Отмена заказа
-async function cancelOrder() {
-  const success = await orderStore.deleteOrder(selectedOrder.value.OrderId);
-  
-  if (success) {
-    showCancelConfirmation.value = false;
-  }
+// Удаление заказа из списка (только локально, без API-вызова)
+function removeOrder() {
+  // Удаляем заказ только из локального состояния
+  orderStore.removeOrderLocally(selectedOrder.value.OrderId);
+  showCancelConfirmation.value = false;
 }
 
 // Загрузка данных при монтировании компонента

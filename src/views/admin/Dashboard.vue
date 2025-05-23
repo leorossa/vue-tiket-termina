@@ -142,15 +142,29 @@ const weekDays = ref(['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']);
 const recentSales = ref([]);
 
 // Преобразование данных заказов для отображения в таблице
-const formatOrdersForDisplay = (orders) => {
-  return orders.map(order => ({
-    id: order.OrderId,
-    date: new Date(),  // Используем текущую дату, так как в API нет даты создания заказа
-    serviceName: order.Service && order.Service.length > 0 ? order.Service[0].ServiceName : 'Неизвестная услуга',
-    clientName: order.VisitorName1 || 'Неизвестный клиент',
-    amount: order.Cost,
-    status: mapOrderStatusToDisplay(order.OrderStateId)
-  }));
+const formatOrdersForDisplay = (orders, parseDate) => {
+  return orders.map(order => {
+    // Используем дату посещения из первой услуги, если она есть
+    let date = new Date();
+    if (order.Service && order.Service.length > 0 && order.Service[0].DtVisit) {
+      date = parseDate(order.Service[0].DtVisit);
+    }
+    
+    // Формируем имя клиента из доступных полей
+    let clientName = order.VisitorName1 || 'Неизвестный клиент';
+    if (order.VisitorName2) {
+      clientName += ` / ${order.VisitorName2}`;
+    }
+    
+    return {
+      id: order.OrderId,
+      date: date,
+      serviceName: order.Service && order.Service.length > 0 ? order.Service[0].ServiceName : 'Неизвестная услуга',
+      clientName: clientName,
+      amount: order.Cost,
+      status: mapOrderStatusToDisplay(order.OrderStateId)
+    };
+  });
 };
 
 // Преобразование статуса заказа в формат для отображения
@@ -255,13 +269,22 @@ async function loadOrderData() {
     const monthAgo = new Date();
     monthAgo.setMonth(monthAgo.getMonth() - 1);
     
-    // Форматируем даты для API
-    const dtEnd = today.toISOString().split('T')[0];
-    const dtBegin = monthAgo.toISOString().split('T')[0];
+    // Форматируем даты для API в формате YYYY-MM-DD
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    const dtEnd = formatDate(today);
+    const dtBegin = formatDate(monthAgo);
     
     // Загружаем заказы за последний месяц
     const response = await getOrdersByDateRange(dtBegin, dtEnd);
     const orders = response.Order || [];
+    
+    console.log('Загружены заказы:', orders);
     
     // Обновляем данные в хранилище
     orderStore.orders = orders;
@@ -280,6 +303,8 @@ async function loadOrderData() {
 function processOrderData(orders) {
   if (!orders || orders.length === 0) return;
   
+  console.log('Обрабатываем заказы:', orders);
+  
   // Получаем текущую дату
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -292,17 +317,38 @@ function processOrderData(orders) {
   const monthAgo = new Date(today);
   monthAgo.setMonth(monthAgo.getMonth() - 1);
   
+  // Функция для преобразования строки даты в объект Date
+  const parseDate = (dateString) => {
+    // Проверяем формат даты (YYYY-MM-DD HH:MM)
+    if (typeof dateString !== 'string') return new Date();
+    
+    const parts = dateString.split(' ');
+    if (parts.length !== 2) return new Date();
+    
+    const dateParts = parts[0].split('-');
+    const timeParts = parts[1].split(':');
+    
+    if (dateParts.length !== 3 || timeParts.length !== 2) return new Date();
+    
+    const year = parseInt(dateParts[0]);
+    const month = parseInt(dateParts[1]) - 1; // Месяцы в JavaScript начинаются с 0
+    const day = parseInt(dateParts[2]);
+    const hour = parseInt(timeParts[0]);
+    const minute = parseInt(timeParts[1]);
+    
+    return new Date(year, month, day, hour, minute);
+  };
+  
   // Фильтруем заказы по датам
-  // Примечание: в API нет даты создания заказа, поэтому используем DtVisit из первой услуги
   const todayOrders = orders.filter(order => {
     if (!order.Service || order.Service.length === 0) return false;
-    const visitDate = new Date(order.Service[0].DtVisit);
+    const visitDate = parseDate(order.Service[0].DtVisit);
     return visitDate >= today;
   });
   
   const weekOrders = orders.filter(order => {
     if (!order.Service || order.Service.length === 0) return false;
-    const visitDate = new Date(order.Service[0].DtVisit);
+    const visitDate = parseDate(order.Service[0].DtVisit);
     return visitDate >= weekAgo;
   });
   
@@ -326,10 +372,10 @@ function processOrderData(orders) {
   };
   
   // Обновляем данные для графика продаж
-  updateSalesChart(orders);
+  updateSalesChart(orders, parseDate);
   
   // Обновляем список последних продаж
-  recentSales.value = formatOrdersForDisplay(orders.slice(0, 5));
+  recentSales.value = formatOrdersForDisplay(orders.slice(0, 5), parseDate);
   
   // Обновляем список популярных услуг
   popularServices.value = calculatePopularServices(orders);
@@ -369,7 +415,7 @@ function calculateActiveServices(orders) {
 }
 
 // Обновляем данные для графика продаж
-function updateSalesChart(orders) {
+function updateSalesChart(orders, parseDate) {
   // Получаем текущую дату
   const today = new Date();
   
@@ -381,20 +427,23 @@ function updateSalesChart(orders) {
   
   // Проходим по всем заказам
   orders.forEach(order => {
-    if (!order.Service || order.Service.length === 0) return;
+    if (!order.Service || order.Service.length === 0 || !order.Service[0].DtVisit) return;
     
-    const visitDate = new Date(order.Service[0].DtVisit);
+    // Используем функцию parseDate для корректного преобразования даты
+    const visitDate = parseDate(order.Service[0].DtVisit);
     const dayOfWeek = visitDate.getDay();
     
     // Проверяем, что дата посещения находится в пределах текущей недели
     const dayDiff = Math.floor((today - visitDate) / (1000 * 60 * 60 * 24));
-    if (dayDiff <= 6) {
-      // Преобразуем день недели из формата JavaScript (0-6, где 0 - воскресенье)
-      // в формат нашего массива (0-6, где 0 - понедельник)
-      const adjustedDayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
-      salesByDay[adjustedDayIndex] += order.Cost;
-    }
+    
+    // Для демонстрации распределим все заказы по дням недели
+    // Преобразуем день недели из формата JavaScript (0-6, где 0 - воскресенье)
+    // в формат нашего массива (0-6, где 0 - понедельник)
+    const adjustedDayIndex = (dayOfWeek === 0) ? 6 : dayOfWeek - 1;
+    salesByDay[adjustedDayIndex] += order.Cost;
   });
+  
+  console.log('Продажи по дням:', salesByDay);
   
   // Находим максимальное значение продаж за день
   const maxSales = Math.max(...salesByDay);
