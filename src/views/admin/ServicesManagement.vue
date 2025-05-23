@@ -37,29 +37,54 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="service in filteredServices" :key="service.ServiceId">
+          <tr v-for="service in filteredServices" :key="service.ServiceId" @click="editService(service)" class="service-row">
             <td>{{ service.ServiceName }}</td>
-            <td>{{ service.Description || 'Нет описания' }}</td>
-            <td>{{ service.Cost }} руб.</td>
-            <td>
-              <span class="admin-badge" v-if="service.VisitObjectCount">
-                {{ service.VisitObjectCount }}
-              </span>
-              <span v-else>Нет</span>
+            <td class="description-cell">
+              <div class="truncated-text">{{ service.Comment || 'Нет описания' }}</div>
             </td>
             <td>
-              <span class="admin-badge" v-if="service.CategoryVisitorCount">
-                {{ service.CategoryVisitorCount }}
-              </span>
-              <span v-else>Нет</span>
+              <div class="price-info">
+                <div v-if="service.Price && service.Price.length">
+                  <div v-for="(price, index) in service.Price" :key="index" class="price-item">
+                    {{ price.Cost }} руб.
+                  </div>
+                </div>
+                <div v-else>{{ service.Cost || 'Не указана' }} руб.</div>
+              </div>
+            </td>
+            <td>
+              <div class="objects-info">
+                <div v-if="service.VisitObject && service.VisitObject.length">
+                  <div v-for="(obj, index) in service.VisitObject" :key="index" class="object-item">
+                    {{ obj.VisitObjectName }}
+                  </div>
+                </div>
+                <div v-else-if="service.VisitObjectCount">
+                  <span class="admin-badge">{{ service.VisitObjectCount }}</span>
+                </div>
+                <div v-else>Нет</div>
+              </div>
+            </td>
+            <td>
+              <div class="categories-info">
+                <div v-if="service.CategoryVisitor && service.CategoryVisitor.length">
+                  <div v-for="(cat, index) in service.CategoryVisitor" :key="index" class="category-item">
+                    {{ cat.CategoryVisitorName }}
+                  </div>
+                </div>
+                <div v-else-if="service.CategoryVisitorCount">
+                  <span class="admin-badge">{{ service.CategoryVisitorCount }}</span>
+                </div>
+                <div v-else>Нет</div>
+              </div>
             </td>
             <td>
               <div class="admin-actions">
                 <button @click="editService(service)" class="admin-button secondary sm">
-                  <i class="fas fa-edit"></i>
+                  <i class="fas fa-edit"></i> Редактировать
                 </button>
                 <button @click="confirmDeleteService(service)" class="admin-button danger sm">
-                  <i class="fas fa-trash"></i>
+                  <i class="fas fa-trash"></i> Удалить
                 </button>
               </div>
             </td>
@@ -202,3 +227,45 @@ async function deleteService() {
   }
 }
 </script>
+
+<style scoped>
+/* Стили для строк таблицы */
+.service-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.service-row:hover {
+  background-color: var(--admin-bg-hover, #f0f4f8);
+}
+
+/* Стили для ячейки с описанием */
+.description-cell {
+  max-width: 250px;
+}
+
+.truncated-text {
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+}
+
+/* Стили для информации о ценах */
+.price-info, .objects-info, .categories-info {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.price-item, .object-item, .category-item {
+  padding: 2px 0;
+  border-bottom: 1px dashed var(--admin-border-color, #e2e8f0);
+}
+
+.price-item:last-child, .object-item:last-child, .category-item:last-child {
+  border-bottom: none;
+}
+</style>

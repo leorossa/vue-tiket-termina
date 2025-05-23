@@ -18,8 +18,9 @@
       <button @click="saveGeneralSettings" class="admin-button primary">Сохранить общие</button>
     </div>
 
+    <!--Настройки API 
     <div class="admin-card settings-section">
-      <!-- Настройки API -->
+       
       <h3 class="subsection-title">Настройки API</h3>
       <div class="admin-form-group">
         <label for="apiEndpoint">Конечная точка API:</label>
@@ -31,9 +32,10 @@
       </div>
       <button @click="saveApiSettings" class="admin-button primary">Сохранить API</button>
     </div>
+    -->
 
-    <div class="admin-card settings-section">
-      <!-- Настройки видеозаставки -->
+    <!-- Настройки видеозаставки
+    <div class="admin-card settings-section"> 
       <h3 class="subsection-title">Настройки видеозаставки</h3>
       <div class="admin-form-group">
         <label for="videoUrl">URL видеозаставки:</label>
@@ -52,9 +54,10 @@
       </div>
       <button @click="saveVideoSettings" class="admin-button primary">Сохранить настройки видео</button>
     </div>
+    -->
 
+    <!-- Настройки печати билетов 
     <div class="admin-card settings-section">
-      <!-- Настройки печати билетов -->
       <h3 class="subsection-title">Настройки печати билетов</h3>
       <div class="admin-form-group">
         <label for="printerName">Имя принтера:</label>
@@ -91,9 +94,10 @@
       </div>
       <button @click="savePrintSettings" class="admin-button primary">Сохранить настройки печати</button>
     </div>
-
+    -->
+    
+    <!-- Настройки смены 
     <div class="admin-card settings-section">
-      <!-- Настройки смены -->
       <h3 class="subsection-title">Настройки смены</h3>
       <div class="admin-form-group">
         <label>Текущий статус смены:</label>
@@ -156,16 +160,69 @@
         </div>
       </div>
     </div>
+    -->
+    
+    <!-- Раздел информации о системе -->
+    <div class="admin-card settings-section">
+      <h3 class="subsection-title">Информация о системе</h3>
+      <div class="admin-form-group">
+        <button @click="showVersionInfo" class="admin-button secondary mb-2 w-100">
+          Просмотреть информацию о версии системы
+        </button>
+        <button @click="showOrgInfo" class="admin-button secondary w-100">
+          Просмотреть информацию об организации
+        </button>
+      </div>
+    </div>
+    
+    <!-- Модальные окна для отображения информации -->
+    <VersionInfoModal 
+      v-if="isVersionInfoModalVisible" 
+      :versionInfo="versionInfo" 
+      @close="isVersionInfoModalVisible = false" 
+    />
+    
+    <OrgInfoModal 
+      v-if="isOrgInfoModalVisible" 
+      :orgInfo="orgInfo" 
+      @close="isOrgInfoModalVisible = false" 
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
+import { getVersionInfo, getOrgInfo } from '@/api/infoApi';
+import VersionInfoModal from '@/components/admin/VersionInfoModal.vue';
+import OrgInfoModal from '@/components/admin/OrgInfoModal.vue';
 
 // Общие настройки
 const generalSettings = reactive({
   terminalName: 'Терминал #1',
   location: 'Центральный парк'
+});
+
+// Загрузка сохраненных настроек терминала
+function loadTerminalSettings() {
+  try {
+    const savedSettings = localStorage.getItem('terminalSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      if (settings.terminalName) {
+        generalSettings.terminalName = settings.terminalName;
+      }
+      if (settings.location) {
+        generalSettings.location = settings.location;
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка при загрузке настроек терминала:', error);
+  }
+}
+
+// Загрузка настроек при монтировании компонента
+onMounted(() => {
+  loadTerminalSettings();
 });
 
 // Настройки API
@@ -210,8 +267,24 @@ const shiftSettings = reactive({
 // Сохранение общих настроек
 const saveGeneralSettings = () => {
   console.log('Общие настройки сохранены:', generalSettings);
-  // В реальном приложении здесь будет вызов API
-  alert('Общие настройки сохранены!');
+  
+  try {
+    localStorage.setItem('terminalSettings', JSON.stringify(generalSettings));
+    
+    // Обновляем информацию о терминале в шапке
+    if (window.updateTerminalSettings) {
+      window.updateTerminalSettings();
+    }
+    
+    // Создаем и диспетчеризируем событие обновления настроек
+    const event = new Event('terminalSettingsUpdated');
+    window.dispatchEvent(event);
+    
+    alert('Общие настройки успешно сохранены');
+  } catch (error) {
+    console.error('Ошибка при сохранении общих настроек:', error);
+    alert('Ошибка при сохранении настроек');
+  }
 };
 
 // Сохранение настроек API
@@ -277,11 +350,65 @@ const formatDate = (date) => {
     minute: '2-digit'
   }).format(date);
 };
+
+// Информация о версии и организации
+const versionInfo = ref({
+  Gate: [],
+  System: [],
+  Requisite: []
+});
+const orgInfo = ref([]);
+const isVersionInfoModalVisible = ref(false);
+const isOrgInfoModalVisible = ref(false);
+
+// Загрузка информации о версии
+async function fetchVersionInfo() {
+  try {
+    const response = await getVersionInfo();
+    versionInfo.value = response;
+    console.log('Получена информация о версии:', response);
+  } catch (error) {
+    console.error('Ошибка при загрузке информации о версии:', error);
+    alert('Не удалось загрузить информацию о версии системы');
+  }
+}
+
+// Загрузка информации об организации
+async function fetchOrgInfo() {
+  try {
+    const response = await getOrgInfo();
+    orgInfo.value = response;
+    console.log('Получена информация об организации:', response);
+  } catch (error) {
+    console.error('Ошибка при загрузке информации об организации:', error);
+    alert('Не удалось загрузить информацию об организации');
+  }
+}
+
+// Показать модальное окно с информацией о версии
+async function showVersionInfo() {
+  await fetchVersionInfo();
+  isVersionInfoModalVisible.value = true;
+}
+
+// Показать модальное окно с информацией об организации
+async function showOrgInfo() {
+  await fetchOrgInfo();
+  isOrgInfoModalVisible.value = true;
+}
 </script>
 
 <style scoped>
 .settings-section {
   margin-bottom: 2em;
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.w-100 {
+  width: 100%;
 }
 
 .subsection-title {
