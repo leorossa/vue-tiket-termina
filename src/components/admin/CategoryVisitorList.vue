@@ -6,14 +6,14 @@
     <table v-else class="admin-table">
       <thead>
         <tr>
-          <th>ID</th>
+          <!--<th>ID</th>-->
           <th>Название</th>
           <th>Действия</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="category in categories" :key="category.CategoryVisitorId">
-          <td>{{ category.CategoryVisitorId }}</td>
+          <!--<td>{{ category.CategoryVisitorId }}</td>-->
           <td>{{ category.CategoryVisitorName }}</td>
           <td>
             <div class="admin-button-group">

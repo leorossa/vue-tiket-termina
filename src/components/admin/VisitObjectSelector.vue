@@ -18,7 +18,7 @@
               <th>Выбрать</th>
               <th>Название</th>
               <th>Адрес</th>
-              <th>Обязательный</th>
+              <!--<th>Обязательный</th>-->
             </tr>
           </thead>
           <tbody>
@@ -33,14 +33,14 @@
               </td>
               <td>{{ object.VisitObjectName }}</td>
               <td>{{ object.Address || '-' }}</td>
-              <td>
+              <!--<td>
                 <input 
                   type="checkbox" 
                   :disabled="!isObjectSelected(object.VisitObjectId)"
                   v-model="object.IsRequire"
                   @change="updateObjectRequirement(object)"
                 />
-              </td>
+              </td>-->
             </tr>
           </tbody>
         </table>

@@ -20,7 +20,7 @@
             class="admin-input"
           />
         </div>
-        <div class="admin-form-group">
+        <!--<div class="admin-form-group">
           <label for="roleFilter">Роль:</label>
           <select id="roleFilter" v-model="roleFilter" class="admin-select">
             <option value="">Все роли</option>
@@ -28,7 +28,7 @@
               {{ role.name }}
             </option>
           </select>
-        </div>
+        </div>-->
       </div>
 
       <!-- Список пользователей -->

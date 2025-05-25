@@ -6,7 +6,7 @@
     <table v-else class="admin-table">
       <thead>
         <tr>
-          <th>ID</th>
+          <!--<th>ID</th>-->
           <th>Название</th>
           <th>Адрес</th>
           <th>Описание</th>
@@ -15,7 +15,7 @@
       </thead>
       <tbody>
         <tr v-for="object in objects" :key="object.VisitObjectId">
-          <td>{{ object.VisitObjectId }}</td>
+          <!--<td>{{ object.VisitObjectId }}</td>-->
           <td>{{ object.VisitObjectName }}</td>
           <td>{{ object.Address || '-' }}</td>
           <td>{{ object.Comment || '-' }}</td>

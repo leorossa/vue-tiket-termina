@@ -58,6 +58,7 @@
           </div>
           -->
           
+          <!--
           <div class="admin-form-group">
             <label for="categoryId">Категория посетителей</label>
             <select 
@@ -75,6 +76,7 @@
               </option>
             </select>
           </div>
+          -->
           
           <div class="admin-modal-footer">
             <button type="button" @click="$emit('cancel')" class="admin-button secondary">

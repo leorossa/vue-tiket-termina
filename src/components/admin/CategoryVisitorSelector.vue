@@ -17,8 +17,8 @@
             <tr>
               <th>Выбрать</th>
               <th>Название</th>
-              <th>Группа</th>
-              <th>Требуемое количество</th>
+              <!--<th>Группа</th>-->
+              <!--<th>Требуемое количество</th>-->
             </tr>
           </thead>
           <tbody>
@@ -33,8 +33,8 @@
                 />
               </td>
               <td>{{ category.CategoryVisitorName }}</td>
-              <td>{{ category.GroupCategoryVisitorName || '-' }}</td>
-              <td>
+              <!--<td>{{ category.GroupCategoryVisitorName || '-' }}</td>-->
+              <!--<td>
                 <input 
                   type="number" 
                   :disabled="!isCategorySelected(category.CategoryVisitorId)"
@@ -43,7 +43,7 @@
                   class="admin-input admin-input-sm"
                   @change="updateCategoryRequirement(category)"
                 />
-              </td>
+              </td>-->
             </tr>
           </tbody>
         </table>
