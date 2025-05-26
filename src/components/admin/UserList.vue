@@ -17,6 +17,7 @@
             <th>Email</th>
             <th>Телефон</th>
             <th>Роль</th>
+            <th>Тип</th>
             <th>Дата создания</th>
             <th>Действия</th>
           </tr>
@@ -28,13 +29,22 @@
             <td>{{ user.Email }}</td>
             <td>{{ user.Phone || '-' }}</td>
             <td>{{ getRoleName(user.Role) }}</td>
+            <td>
+              <span v-if="user.IsRoot" class="user-badge root">Рут</span>
+              <span v-else class="user-badge normal">Обычный</span>
+            </td>
             <td>{{ formatDate(user.CreatedAt) }}</td>
             <td>
               <div class="admin-button-group">
                 <button @click="$emit('edit', user)" class="admin-button secondary">
                   Редактировать
                 </button>
-                <button @click="confirmDelete(user)" class="admin-button danger">
+                <button 
+                  @click="confirmDelete(user)" 
+                  class="admin-button danger"
+                  :disabled="user.IsRoot && !canManageRootUsers"
+                  :title="user.IsRoot && !canManageRootUsers ? 'Только root-пользователь может удалить другого root-пользователя' : ''"
+                >
                   Удалить
                 </button>
               </div>
@@ -53,6 +63,9 @@
         </div>
         <div class="admin-modal-body">
           <p>Вы действительно хотите удалить пользователя "{{ userToDelete?.UserName }}"?</p>
+          <p v-if="userToDelete?.IsRoot" class="text-warning">
+            <strong>Внимание!</strong> Вы удаляете root-пользователя.
+          </p>
           <p class="text-danger">Это действие нельзя отменить.</p>
         </div>
         <div class="admin-modal-footer">
@@ -78,6 +91,9 @@ const userStore = useUserStore();
 const loading = computed(() => userStore.isLoading);
 const users = computed(() => userStore.users);
 const availableRoles = computed(() => userStore.availableRoles);
+
+// Проверка, является ли текущий пользователь root-пользователем
+const canManageRootUsers = computed(() => userStore.isRoot);
 
 // Состояние модального окна подтверждения удаления
 const showConfirmModal = ref(false);
@@ -115,6 +131,12 @@ function formatDate(dateString) {
 
 // Подтверждение удаления пользователя
 function confirmDelete(user) {
+  // Проверяем, можно ли удалить root-пользователя
+  if (user.IsRoot && !canManageRootUsers.value) {
+    alert('Только root-пользователь может удалить другого root-пользователя');
+    return;
+  }
+  
   userToDelete.value = user;
   showConfirmModal.value = true;
 }
@@ -136,5 +158,36 @@ function deleteUser() {
 
 .text-danger {
   color: #dc3545;
+}
+
+.text-warning {
+  color: #ffc107;
+}
+
+.user-badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.25rem;
+}
+
+.user-badge.root {
+  background-color: #dc3545;
+  color: white;
+}
+
+.user-badge.normal {
+  background-color: #6c757d;
+  color: white;
+}
+
+.admin-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

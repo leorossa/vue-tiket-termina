@@ -12,7 +12,7 @@
             <label for="userName">Имя пользователя:</label>
             <input
               id="userName"
-              v-model="formData.userName"
+              v-model="formData.UserName"
               type="text"
               required
               class="admin-input"
@@ -23,7 +23,7 @@
             <label for="fullName">Полное имя:</label>
             <input
               id="fullName"
-              v-model="formData.fullName"
+              v-model="formData.FullName"
               type="text"
               required
               class="admin-input"
@@ -34,7 +34,7 @@
             <label for="email">Email:</label>
             <input
               id="email"
-              v-model="formData.email"
+              v-model="formData.Email"
               type="email"
               required
               class="admin-input"
@@ -45,7 +45,7 @@
             <label for="phone">Телефон:</label>
             <input
               id="phone"
-              v-model="formData.phone"
+              v-model="formData.Phone"
               type="text"
               class="admin-input"
             />
@@ -55,7 +55,7 @@
             <label for="password">Пароль:</label>
             <input
               id="password"
-              v-model="formData.password"
+              v-model="formData.Password"
               type="password"
               :required="!isEditing"
               class="admin-input"
@@ -67,7 +67,7 @@
             <label for="role">Роль:</label>
             <select
               id="role"
-              v-model="formData.role"
+              v-model="formData.Role"
               required
               class="admin-input"
             >
@@ -77,8 +77,21 @@
             </select>
           </div>
           
+          <!-- Root-пользователь -->
+          <div class="admin-form-group" v-if="canManageRootUsers">
+            <label class="admin-checkbox-item">
+              <input 
+                type="checkbox" 
+                v-model="formData.IsRoot" 
+                class="admin-checkbox"
+                @change="handleRootChange"
+              />
+              <span>Root-пользователь (имеет все права)</span>
+            </label>
+          </div>
+          
           <!-- Права доступа -->
-          <div class="admin-form-group">
+          <div class="admin-form-group" v-if="!formData.IsRoot">
             <label>Права доступа:</label>
             <div class="admin-checkbox-grid">
               <label 
@@ -88,11 +101,17 @@
               >
                 <input 
                   type="checkbox" 
-                  v-model="formData.permissions[permission.id]" 
+                  v-model="formData.Permissions[permission.id]" 
                   class="admin-checkbox" 
                 />
                 <span>{{ permission.name }}</span>
               </label>
+            </div>
+          </div>
+          
+          <div class="admin-form-group" v-else>
+            <div class="permissions-info">
+              Root-пользователь имеет все права доступа в системе
             </div>
           </div>
         </form>
@@ -131,16 +150,30 @@ const userStore = useUserStore();
 const availableRoles = computed(() => userStore.availableRoles);
 const availablePermissions = computed(() => userStore.availablePermissions);
 
-// Данные формы
+// Проверка, может ли текущий пользователь управлять root-пользователями
+const canManageRootUsers = computed(() => userStore.isRoot);
+
+// Данные формы с учетом новой структуры API
 const formData = reactive({
-  userName: '',
-  fullName: '',
-  email: '',
-  phone: '',
-  password: '',
-  role: 'USER',
-  permissions: {}
+  UserName: '',
+  FullName: '',
+  Email: '',
+  Phone: '',
+  Password: '',
+  Role: 'USER',
+  IsRoot: false,
+  Permissions: {}
 });
+
+// Обработка изменения статуса root-пользователя
+function handleRootChange() {
+  if (formData.IsRoot) {
+    // Если пользователь стал root, устанавливаем все права
+    availablePermissions.value.forEach(permission => {
+      formData.Permissions[permission.id] = true;
+    });
+  }
+}
 
 // Инициализация прав доступа
 onMounted(() => {
@@ -151,21 +184,22 @@ onMounted(() => {
   });
   
   // Устанавливаем начальные значения
-  formData.permissions = permissions;
+  formData.Permissions = permissions;
   
   // Если редактируем пользователя, заполняем форму его данными
   if (props.isEditing && props.user) {
-    formData.userName = props.user.UserName || '';
-    formData.fullName = props.user.FullName || '';
-    formData.email = props.user.Email || '';
-    formData.phone = props.user.Phone || '';
-    formData.role = props.user.Role || 'USER';
+    formData.UserName = props.user.UserName || '';
+    formData.FullName = props.user.FullName || '';
+    formData.Email = props.user.Email || '';
+    formData.Phone = props.user.Phone || '';
+    formData.Role = props.user.Role || 'USER';
+    formData.IsRoot = props.user.IsRoot || false;
     
     // Если у пользователя есть права, заполняем их
-    if (props.user.permissions) {
-      Object.keys(props.user.permissions).forEach(key => {
-        if (formData.permissions.hasOwnProperty(key)) {
-          formData.permissions[key] = props.user.permissions[key];
+    if (props.user.Permissions) {
+      Object.keys(props.user.Permissions).forEach(key => {
+        if (formData.Permissions.hasOwnProperty(key)) {
+          formData.Permissions[key] = props.user.Permissions[key];
         }
       });
     }
@@ -175,27 +209,18 @@ onMounted(() => {
 // Функция сохранения пользователя
 function saveUser() {
   try {
-    // Подготовка данных для сохранения
-    const userData = {
-      UserName: formData.userName,
-      FullName: formData.fullName,
-      Email: formData.email,
-      Phone: formData.phone,
-      Role: formData.role
-    };
+    // Копируем данные формы для отправки
+    const userData = { ...formData };
     
-    // Добавляем пароль только если он указан
-    if (formData.password) {
-      userData.Password = formData.password;
+    // Удаляем пароль, если он пустой при редактировании
+    if (props.isEditing && !userData.Password) {
+      delete userData.Password;
     }
-    
-    // Добавляем права доступа
-    userData.permissions = formData.permissions;
     
     console.log('Отправка данных пользователя:', userData);
     
     // Отправка данных родительскому компоненту
-    emit('save', userData, props.isEditing);
+    emit('save', userData);
   } catch (error) {
     console.error('Ошибка при сохранении пользователя:', error);
   }

@@ -3,7 +3,11 @@
     <div class="admin-card">
       <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="admin-section-title">Управление пользователями</h2>
-        <button @click="openCreateUserModal" class="admin-button primary">
+        <button 
+          @click="openCreateUserModal" 
+          class="admin-button primary"
+          v-if="hasPermission('CanManageUsers')"
+        >
           Добавить пользователя
         </button>
       </div>
@@ -20,7 +24,7 @@
             class="admin-input"
           />
         </div>
-        <!--<div class="admin-form-group">
+        <div class="admin-form-group">
           <label for="roleFilter">Роль:</label>
           <select id="roleFilter" v-model="roleFilter" class="admin-select">
             <option value="">Все роли</option>
@@ -28,7 +32,15 @@
               {{ role.name }}
             </option>
           </select>
-        </div>-->
+        </div>
+        <div class="admin-form-group">
+          <label for="typeFilter">Тип:</label>
+          <select id="typeFilter" v-model="typeFilter" class="admin-select">
+            <option value="">Все типы</option>
+            <option value="root">Root-пользователи</option>
+            <option value="normal">Обычные пользователи</option>
+          </select>
+        </div>
       </div>
 
       <!-- Список пользователей -->
@@ -73,9 +85,11 @@ const userStore = useUserStore();
 // Состояния компонента
 const searchQuery = ref('');
 const roleFilter = ref('');
+const typeFilter = ref('');
 const loading = computed(() => userStore.loading);
 const users = computed(() => userStore.users);
 const availableRoles = computed(() => userStore.availableRoles);
+const isRoot = computed(() => userStore.isRoot);
 
 const showUserModal = ref(false);
 const showDeleteConfirmModal = ref(false);
@@ -83,31 +97,55 @@ const selectedUser = ref(null);
 const userToDelete = ref(null);
 const isEditing = ref(false);
 
+// Проверка прав доступа
+function hasPermission(permission) {
+  return userStore.hasPermission(permission) || isRoot.value;
+}
+
 // Фильтрация пользователей
 const filteredUsers = computed(() => {
   return users.value.filter(user => {
+    // Фильтр по поисковому запросу
     const matchesSearch = searchQuery.value === '' || 
       (user.UserName && user.UserName.toLowerCase().includes(searchQuery.value.toLowerCase())) || 
       (user.Email && user.Email.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
       (user.FullName && user.FullName.toLowerCase().includes(searchQuery.value.toLowerCase()));
     
+    // Фильтр по роли
     const matchesRole = roleFilter.value === '' || user.Role === roleFilter.value;
     
-    return matchesSearch && matchesRole;
+    // Фильтр по типу (root или обычный)
+    const matchesType = typeFilter.value === '' || 
+      (typeFilter.value === 'root' && user.IsRoot) || 
+      (typeFilter.value === 'normal' && !user.IsRoot);
+    
+    return matchesSearch && matchesRole && matchesType;
   });
 });
 
 // Загрузка пользователей при монтировании компонента
 onMounted(async () => {
   try {
-    await userStore.fetchUsers();
+    // Загружаем все данные пользователя, включая права доступа
+    await userStore.loadUserData();
+    
+    // Проверяем права доступа
+    if (!hasPermission('CanManageUsers')) {
+      alert('У вас нет прав для управления пользователями');
+      // Здесь можно добавить перенаправление на другую страницу
+    }
   } catch (error) {
-    console.error('Ошибка при загрузке пользователей:', error);
+    console.error('Ошибка при загрузке данных пользователя:', error);
   }
 });
 
 // Открытие модального окна создания пользователя
 function openCreateUserModal() {
+  if (!hasPermission('CanManageUsers')) {
+    alert('У вас нет прав для создания пользователей');
+    return;
+  }
+  
   selectedUser.value = null;
   isEditing.value = false;
   showUserModal.value = true;
@@ -115,6 +153,17 @@ function openCreateUserModal() {
 
 // Открытие модального окна редактирования пользователя
 function openEditUserModal(user) {
+  // Проверяем, можно ли редактировать root-пользователя
+  if (user.IsRoot && !isRoot.value) {
+    alert('Только root-пользователь может редактировать другого root-пользователя');
+    return;
+  }
+  
+  if (!hasPermission('CanManageUsers')) {
+    alert('У вас нет прав для редактирования пользователей');
+    return;
+  }
+  
   selectedUser.value = { ...user };
   isEditing.value = true;
   showUserModal.value = true;
@@ -127,6 +176,18 @@ function closeUserModal() {
 
 // Подтверждение удаления пользователя
 function confirmDeleteUser(user) {
+  // Проверка прав доступа
+  if (!hasPermission('CanManageUsers')) {
+    alert('У вас нет прав для удаления пользователей');
+    return;
+  }
+  
+  // Проверка на root-пользователя
+  if (user.IsRoot && !isRoot.value) {
+    alert('Только root-пользователь может удалить другого root-пользователя');
+    return;
+  }
+  
   userToDelete.value = user;
   showDeleteConfirmModal.value = true;
 }
@@ -142,7 +203,13 @@ async function saveUser(userData) {
   try {
     if (isEditing.value) {
       console.log(`Обновление пользователя с ID: ${selectedUser.value.Id}`, userData);
-      // Обновление пользователя - используем Id
+      
+      // Проверка на root-пользователя при редактировании
+      if (selectedUser.value.IsRoot && !isRoot.value) {
+        throw new Error('Только root-пользователь может редактировать другого root-пользователя');
+      }
+      
+      // Обновление пользователя
       const result = await userStore.updateUser(selectedUser.value.Id, userData);
       
       if (result) {
@@ -150,6 +217,11 @@ async function saveUser(userData) {
       }
     } else {
       // Создание нового пользователя
+      // Проверка на создание root-пользователя
+      if (userData.IsRoot && !isRoot.value) {
+        throw new Error('Только root-пользователь может создать другого root-пользователя');
+      }
+      
       const result = await userStore.createUser(userData);
       
       if (result) {
@@ -158,7 +230,7 @@ async function saveUser(userData) {
     }
   } catch (error) {
     console.error('Ошибка при сохранении пользователя:', error);
-
+    alert(`Ошибка при сохранении пользователя: ${error.message}`);
   }
 }
 
@@ -166,13 +238,18 @@ async function saveUser(userData) {
 async function deleteUser() {
   try {
     if (userToDelete.value) {
+      // Проверка на root-пользователя при удалении
+      if (userToDelete.value.IsRoot && !isRoot.value) {
+        throw new Error('Только root-пользователь может удалить другого root-пользователя');
+      }
+      
       await userStore.deleteUser(userToDelete.value.Id);
       showDeleteConfirmModal.value = false;
       userToDelete.value = null;
     }
   } catch (error) {
     console.error(`Ошибка при удалении пользователя:`, error);
-    // Здесь можно добавить отображение ошибки пользователю
+    alert(`Ошибка при удалении пользователя: ${error.message}`);
   }
 }
 </script>
@@ -180,13 +257,28 @@ async function deleteUser() {
 <style scoped>
 .admin-form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 1rem;
+}
+
+@media (max-width: 992px) {
+  .admin-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 768px) {
   .admin-form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.admin-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--admin-border-color, #e2e8f0);
+  border-radius: var(--admin-border-radius, 4px);
+  background-color: white;
+  font-size: 1rem;
 }
 </style>

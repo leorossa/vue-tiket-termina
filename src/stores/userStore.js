@@ -1,6 +1,16 @@
 // Хранилище для управления пользователями
 import { defineStore } from 'pinia';
-import { getUsers as fetchUsers, getUserById as fetchUserById, createUser, updateUser as userApiUpdateUser, deleteUser } from '@/api/userApi';
+import { 
+  getUsers as fetchUsers, 
+  getUserById as fetchUserById, 
+  getCurrentUser as fetchCurrentUser,
+  isCurrentUserRoot,
+  getCurrentUserPermissions,
+  getPermissionsList,
+  createUser, 
+  updateUser as userApiUpdateUser, 
+  deleteUser 
+} from '@/api/userApi';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -9,29 +19,28 @@ export const useUserStore = defineStore('user', {
     loading: false,
     error: null,
     permissions: {},
+    isRoot: false,
+    permissionsList: {},
     
     // Список доступных ролей
     availableRoles: [
-      { id: 'ROOT', name: 'Root (Суперадминистратор)' },
-      { id: 'ADMIN', name: 'Admin (Администратор)' },
-      { id: 'MANAGER', name: 'Manager (Менеджер)' },
-      { id: 'USER', name: 'User (Пользователь)' }
+      { id: 'ADMIN', name: 'Администратор' },
+      { id: 'MANAGER', name: 'Менеджер' },
+      { id: 'USER', name: 'Пользователь' },
     ],
     
-    // Доступные права пользователей
+    // Доступные права пользователей в соответствии с API
     availablePermissions: [
-      { id: 'canManageUsers', name: 'Управление пользователями' },
-      { id: 'canManageServices', name: 'Управление услугами' },
-      { id: 'canManageCategories', name: 'Управление категориями' },
-      { id: 'canManageVisitObjects', name: 'Управление объектами посещения' },
-      { id: 'canViewReports', name: 'Просмотр отчетов' },
-      { id: 'canManageSettings', name: 'Управление настройками' },
-      { id: 'canSellTickets', name: 'Продажа билетов' },
-      { id: 'canManageOrders', name: 'Управление заказами' },
-      { id: 'canExportData', name: 'Экспорт данных' },
-      { id: 'canImportData', name: 'Импорт данных' }
+      { id: 'CanManageUsers', name: 'Управление пользователями' },
+      { id: 'CanManageServices', name: 'Управление услугами' },
+      { id: 'CanManageCategories', name: 'Управление категориями' },
+      { id: 'CanManageVisitObjects', name: 'Управление объектами посещения' },
+      { id: 'CanViewReports', name: 'Просмотр отчетов' },
+      { id: 'CanManageSettings', name: 'Управление настройками' },
+      { id: 'CanManageOrders', name: 'Управление заказами' },
+      { id: 'CanExportData', name: 'Экспорт данных' },
+      { id: 'CanImportData', name: 'Импорт данных' }
     ],
-    error: null
   }),
   
   getters: {
@@ -43,7 +52,7 @@ export const useUserStore = defineStore('user', {
       return state.users.find(user => user.Id === id);
     },
     
-    // Получение пользователя по имени пользователя (для обратной совместимости)
+    // Получение пользователя по имени пользователя
     getUserByUsername: (state) => (username) => {
       return state.users.find(user => user.UserName === username);
     },
@@ -53,49 +62,35 @@ export const useUserStore = defineStore('user', {
     
     // Проверка, является ли пользователь администратором
     isAdmin: (state) => {
-      return state.currentUser && state.currentUser.role === 'admin';
+      return state.currentUser && state.currentUser.Role === 'ADMIN';
+    },
+    
+    // Проверка, является ли пользователь root-пользователем
+    isRoot: (state) => {
+      return state.isRoot || (state.currentUser && state.currentUser.IsRoot);
+    },
+    
+    // Получение прав доступа текущего пользователя
+    getUserPermissions: (state) => {
+      return state.currentUser?.Permissions || {};
     },
     
     // Проверка наличия права доступа
     hasPermission: (state) => (permission) => {
-      // Получаем текущего пользователя
-      const user = state.currentUser;
-      if (!user) return false;
+      // Если пользователь не авторизован
+      if (!state.currentUser) return false;
       
-      // Если пользователь ROOT, у него есть все права
-      if (user.Role === 'ROOT') return true;
+      // Если пользователь root, у него есть все права
+      if (state.isRoot || state.currentUser.IsRoot) return true;
       
-      // Если пользователь ADMIN, у него есть большинство прав, кроме супер-администраторских
-      if (user.Role === 'ADMIN') {
-        // Права, которых нет у администратора
-        const restrictedPermissions = ['canManageRootSettings'];
-        return !restrictedPermissions.includes(permission);
+      // Проверяем права доступа из объекта Permissions
+      if (state.currentUser.Permissions) {
+        return !!state.currentUser.Permissions[permission];
       }
       
-      // Если пользователь MANAGER, у него есть ограниченный набор прав
-      if (user.Role === 'MANAGER') {
-        const managerPermissions = [
-          'canViewReports',
-          'canSellTickets',
-          'canManageOrders',
-          'canViewServices'
-        ];
-        return managerPermissions.includes(permission);
-      }
-      
-      // Для обычных пользователей
-      if (user.Role === 'USER') {
-        const userPermissions = [
-          'canSellTickets',
-          'canViewServices'
-        ];
-        return userPermissions.includes(permission);
-      }
-      
-      return false;
+      // Если нет объекта Permissions, проверяем в списке прав
+      return !!state.permissionsList[permission];
     },
-    
-
     
     // Проверка загрузки
     isLoading: (state) => state.loading
@@ -138,14 +133,123 @@ export const useUserStore = defineStore('user', {
       }
     },
     
+    // Получение информации о текущем пользователе
+    async fetchCurrentUser() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const user = await fetchCurrentUser();
+        this.currentUser = user;
+        return user;
+      } catch (error) {
+        this.error = error.message || 'Ошибка при получении информации о текущем пользователе';
+        console.error('Ошибка при получении информации о текущем пользователе:', error);
+        return null;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Проверка, является ли текущий пользователь root-пользователем
+    async checkIsRoot() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const isRootUser = await isCurrentUserRoot();
+        this.isRoot = isRootUser;
+        return isRootUser;
+      } catch (error) {
+        this.error = error.message || 'Ошибка при проверке root-статуса';
+        console.error('Ошибка при проверке root-статуса:', error);
+        return false;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Получение прав доступа текущего пользователя
+    async fetchUserPermissions() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const permissions = await getCurrentUserPermissions();
+        this.permissions = permissions;
+        return permissions;
+      } catch (error) {
+        this.error = error.message || 'Ошибка при получении прав доступа';
+        console.error('Ошибка при получении прав доступа:', error);
+        return {};
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Получение списка прав доступа
+    async fetchPermissionsList() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const permissionsList = await getPermissionsList();
+        this.permissionsList = permissionsList;
+        return permissionsList;
+      } catch (error) {
+        this.error = error.message || 'Ошибка при получении списка прав доступа';
+        console.error('Ошибка при получении списка прав доступа:', error);
+        return {};
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // Загрузка всех данных пользователя
+    async loadUserData() {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // Загружаем все данные параллельно
+        await Promise.all([
+          this.fetchCurrentUser(),
+          this.checkIsRoot(),
+          this.fetchUserPermissions(),
+          this.fetchPermissionsList(),
+          this.fetchUsers()
+        ]);
+        
+        return true;
+      } catch (error) {
+        this.error = error.message || 'Ошибка при загрузке данных пользователя';
+        console.error('Ошибка при загрузке данных пользователя:', error);
+        return false;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
     // Создание нового пользователя
     async createUser(userData) {
       this.loading = true;
       this.error = null;
       
       try {
-        console.log('Отправка данных для создания пользователя:', userData);
-        const user = await createUser(userData);
+        // Преобразуем данные в формат API
+        const apiUserData = {
+          UserName: userData.UserName,
+          Password: userData.Password,
+          Role: userData.Role,
+          FullName: userData.FullName,
+          Phone: userData.Phone,
+          Email: userData.Email,
+          IsRoot: userData.IsRoot || false,
+          Permissions: userData.Permissions || {}
+        };
+        
+        console.log('Отправка данных для создания пользователя:', apiUserData);
+        const user = await createUser(apiUserData);
         
         // Обновляем список пользователей
         await this.fetchUsers();
@@ -161,7 +265,7 @@ export const useUserStore = defineStore('user', {
     },
     
     // Обновление пользователя
-    async updateUser(id, userDataFromForm) { 
+    async updateUser(id, userData) { 
       this.loading = true;
       this.error = null;
       
@@ -171,86 +275,46 @@ export const useUserStore = defineStore('user', {
           throw new Error('Не указан ID пользователя');
         }
         
-        console.log(`Обновление пользователя с ID: ${id}. Данные из формы:`, userDataFromForm);
-
-        // Подготавливаем данные для отправки на сервер согласно предоставленному Swagger (без permissions в теле)
-        const payloadForApi = {
-          UserName: userDataFromForm.UserName,
-          Role: userDataFromForm.Role,
-          FullName: userDataFromForm.FullName,
-          Phone: userDataFromForm.Phone,
-          Email: userDataFromForm.Email,
+        // Подготавливаем данные для API в соответствии с документацией
+        const apiUserData = {
+          UserName: userData.UserName,
+          Role: userData.Role,
+          FullName: userData.FullName,
+          Phone: userData.Phone,
+          Email: userData.Email,
+          IsRoot: userData.IsRoot || false,
+          Permissions: userData.Permissions || {}
         };
-        if (userDataFromForm.Password && userDataFromForm.Password.trim() !== '') {
-          payloadForApi.Password = userDataFromForm.Password;
+        
+        // Добавляем пароль только если он указан
+        if (userData.Password && userData.Password.trim() !== '') {
+          apiUserData.Password = userData.Password;
         }
-        console.log('Данные для отправки в API (payloadForApi):', payloadForApi);
-
-        let responseFromApi = null;
-        try {
-        console.log(`[userStore.js] updateUser: Вызов userApiUpdateUser с ID=${id} и payloadForApi:`, JSON.parse(JSON.stringify(payloadForApi)));
-        responseFromApi = await userApiUpdateUser(id, payloadForApi);
-        console.log(`[userStore.js] updateUser: Ответ от userApiUpdateUser (responseFromApi):`, JSON.parse(JSON.stringify(responseFromApi)));
-          console.log('Успешный ответ от API:', responseFromApi);
-
-          // API Успех: Обновляем локальное состояние данными от сервера
-      console.log('[userStore.js] updateUser: API вызов успешен. Обновляем локальное состояние.');
-      const index = this.users.findIndex(user => String(user.Id) === String(id));
-          if (index !== -1) {
-            const updatedUserFromServer = {
-              Id: parseInt(id), // ID точно есть
-              UserName: responseFromApi.UserName !== undefined ? responseFromApi.UserName : this.users[index].UserName,
-              FullName: responseFromApi.FullName !== undefined ? responseFromApi.FullName : this.users[index].FullName,
-              Email: responseFromApi.Email !== undefined ? responseFromApi.Email : this.users[index].Email,
-              Phone: responseFromApi.Phone !== undefined ? responseFromApi.Phone : this.users[index].Phone,
-              Role: responseFromApi.Role !== undefined ? responseFromApi.Role : this.users[index].Role,
-              permissions: responseFromApi.permissions !== undefined ? responseFromApi.permissions : this.users[index].permissions,
-            };
-
-            this.users[index] = updatedUserFromServer;
-            if (this.currentUser && String(this.currentUser.Id) === String(id)) {
-              this.currentUser = updatedUserFromServer;
-            }
-            console.log(`[userStore.js] updateUser: Пользователь с ID ${id} обновлен в локальном списке данными от API. Результат:`, JSON.parse(JSON.stringify(updatedUserFromServer)));
-            return updatedUserFromServer; // Возвращаем обновленного пользователя
-          } else {
-            console.warn(`Пользователь с ID ${id} не найден в локальном списке после успешного API-запроса.`);
-            return responseFromApi; // Возвращаем то, что пришло от API
+        
+        console.log(`Обновление пользователя с ID ${id}:`, apiUserData);
+        
+        // Отправляем запрос на обновление
+        const updatedUser = await userApiUpdateUser(id, apiUserData);
+        
+        // Обновляем пользователя в локальном списке
+        const index = this.users.findIndex(user => String(user.Id) === String(id));
+        if (index !== -1) {
+          this.users[index] = updatedUser;
+          
+          // Если обновляем текущего пользователя, обновляем и его
+          if (this.currentUser && String(this.currentUser.Id) === String(id)) {
+            this.currentUser = updatedUser;
           }
-
-        } catch (apiError) {
-          this.error = apiError.message || 'Ошибка при обновлении пользователя через API';
-      console.error(`[userStore.js] updateUser: Ошибка API при обновлении пользователя ID ${id}. Объект ошибки:`, apiError);
-      // Попытка вывести больше деталей, если это Axios ошибка
-      if (apiError.response) {
-        console.error(`[userStore.js] updateUser: Ошибка API - Статус: ${apiError.response.status}, Данные:`, apiError.response.data);
-      }
-
-          // API Ошибка: Обновляем локальное состояние "визуально" данными из формы
-          const index = this.users.findIndex(user => String(user.Id) === String(id));
-          if (index !== -1) {
-            const visuallyUpdatedUser = {
-              ...this.users[index], // Начинаем с существующих данных пользователя
-              UserName: userDataFromForm.UserName,
-              FullName: userDataFromForm.FullName,
-              Email: userDataFromForm.Email,
-              Phone: userDataFromForm.Phone,
-              Role: userDataFromForm.Role,
-              permissions: userDataFromForm.permissions || this.users[index].permissions, // Используем permissions из формы
-            };
-            this.users[index] = visuallyUpdatedUser;
-
-            if (this.currentUser && String(this.currentUser.Id) === String(id)) {
-              this.currentUser = visuallyUpdatedUser;
-            }
-            console.log(`Пользователь с ID ${id} обновлен локально (визуально) после ошибки API.`);
-          }
-          throw apiError; // Пробрасываем ошибку, чтобы компонент мог ее обработать
+        } else {
+          // Если пользователь не найден в списке, обновляем весь список
+          await this.fetchUsers();
         }
+        
+        return updatedUser;
       } catch (error) {
-        this.error = error.message || `Ошибка при обновлении пользователя`;
+        this.error = error.message || `Ошибка при обновлении пользователя с ID ${id}`;
         console.error(`Ошибка при обновлении пользователя с ID ${id}:`, error);
-        throw error; // Пробрасываем ошибку дальше для обработки в компоненте
+        throw error;
       } finally {
         this.loading = false;
       }
@@ -267,13 +331,13 @@ export const useUserStore = defineStore('user', {
           throw new Error('Не указан ID пользователя');
         }
         
-        console.log(`Удаление пользователя с ID ${id}`);
-        
-        // Проверяем, существует ли пользователь в локальном списке
-        const userExists = this.users.some(user => user.Id === id);
-        if (!userExists) {
-          console.warn(`Пользователь с ID ${id} не найден в локальном списке, продолжаем запрос к API`);
+        // Проверяем, не пытаемся ли удалить root-пользователя без прав
+        const userToDelete = this.users.find(user => user.Id === id);
+        if (userToDelete && userToDelete.IsRoot && !this.isRoot) {
+          throw new Error('Только root-пользователь может удалить другого root-пользователя');
         }
+        
+        console.log(`Удаление пользователя с ID ${id}`);
         
         // Отправляем запрос на удаление
         await deleteUser(id);
@@ -284,12 +348,16 @@ export const useUserStore = defineStore('user', {
           this.users.splice(index, 1);
           console.log(`Пользователь с ID ${id} успешно удален из локального списка`);
         } else {
-          console.warn(`Пользователь с ID ${id} не найден в локальном списке после удаления`);
+          // Если пользователь не найден в списке, обновляем весь список
+          await this.fetchUsers();
         }
         
         // Если удаляем текущего пользователя, разлогиниваемся
         if (this.currentUser && this.currentUser.Id === id) {
           this.currentUser = null;
+          this.isRoot = false;
+          this.permissions = {};
+          this.permissionsList = {};
           localStorage.removeItem('currentUser');
           console.log(`Текущий пользователь удален, выполнен выход из системы`);
         }

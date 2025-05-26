@@ -17,11 +17,11 @@ export const useAuthStore = defineStore('auth', {
     // Получение текущего пользователя
     currentUser: (state) => state.user,
     
-    // Получение роли пользователя
-    userRole: (state) => state.user ? state.user.role : null,
-    
     // Получение токена авторизации
     authToken: (state) => state.token,
+    
+    // Получение роли пользователя
+    userRole: (state) => state.user ? state.user.role : null,
     
     // Получение заголовков авторизации для запросов
     authHeaders: (state) => {

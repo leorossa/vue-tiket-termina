@@ -36,6 +36,70 @@ export async function getUserById(id) {
 }
 
 /**
+ * Получение информации о текущем пользователе
+ * @returns {Promise<Object>} Данные текущего пользователя
+ */
+export async function getCurrentUser() {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/Users/Current`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при получении информации о текущем пользователе:', error);
+    throw error;
+  }
+}
+
+/**
+ * Проверка, является ли текущий пользователь root-пользователем
+ * @returns {Promise<boolean>} Результат проверки
+ */
+export async function isCurrentUserRoot() {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/Users/IsRoot`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при проверке root-статуса пользователя:', error);
+    throw error;
+  }
+}
+
+/**
+ * Получение прав доступа текущего пользователя
+ * @returns {Promise<Object>} Права доступа пользователя
+ */
+export async function getCurrentUserPermissions() {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/Permissions/Current`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при получении прав доступа:', error);
+    throw error;
+  }
+}
+
+/**
+ * Получение списка прав доступа текущего пользователя
+ * @returns {Promise<Object>} Список прав доступа
+ */
+export async function getPermissionsList() {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/Permissions/List`, {
+      headers: getAuthHeaders()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при получении списка прав доступа:', error);
+    throw error;
+  }
+}
+
+/**
  * Создание нового пользователя
  * @param {Object} userData - Данные пользователя
  * @returns {Promise<Object>} Созданный пользователь
@@ -60,14 +124,12 @@ export async function createUser(userData) {
  */
 export async function updateUser(id, userData) {
   try {
-    // Согласно документации API, путь должен быть /Users/Update/{id}
     const response = await axios.put(`${API_BASE_URL}/Users/Update/${id}`, userData, {
       headers: getAuthHeaders()
     });
     return response.data;
   } catch (error) {
     console.error(`Ошибка при обновлении пользователя с ID ${id}:`, error.response ? { status: error.response.status, data: error.response.data, headers: error.response.headers } : error.message);
-    // Добавим вывод всего объекта ошибки, если он не стандартный AxiosError
     if (!error.response) console.error('Полный объект ошибки:', error);
     throw error;
   }
