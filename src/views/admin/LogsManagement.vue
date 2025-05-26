@@ -29,6 +29,10 @@
             <span v-if="sortDirection === 'desc'">↓</span>
             <span v-else>↑</span>
           </button>
+
+          <button @click="deleteLogs" class="admin-button secondary ml-2" title="Удалить">
+            <span>Очистить логи старше 120 дней</span>
+          </button>
           
           <button @click="fetchLogs" class="admin-button primary ml-2" title="Обновить">
             <span>⟳</span>
@@ -97,7 +101,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
-import { getLogs } from '@/api/infoApi';
+import { getLogs, deleteLogs as deleteLogsApi } from '@/api/infoApi';
 
 // Проверка прав доступа
 const authStore = useAuthStore();
@@ -209,6 +213,25 @@ function formatDate(dateString) {
     minute: '2-digit',
     second: '2-digit'
   }).format(date);
+}
+
+// Удаление логов старше 120 дней
+async function deleteLogs() {
+  try {
+    loading.value = true;
+    await deleteLogsApi();
+    
+    // Показываем уведомление об успешном удалении
+    alert('Логи старше 120 дней успешно удалены');
+    
+    // Обновляем список логов
+    await fetchLogs();
+  } catch (err) {
+    console.error('Ошибка при удалении логов:', err);
+    alert('Ошибка при удалении логов: ' + (err.message || 'Неизвестная ошибка'));
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 

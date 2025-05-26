@@ -36,6 +36,25 @@ export async function getLogs() {
 }
 
 /**
+ * Удаление логов за последние 120 дней
+ * @returns {Promise<boolean>} Результат удаления
+ */
+export async function deleteLogs() {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/Logs/Delete`, {
+      headers: getAuthHeaders()
+    });
+    
+    console.log('Логи удалены:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при удалении логов:', error);
+    throw error;
+  }
+}
+
+/**
  * Получение информации о версии системы
  * @returns {Promise<Object>} Информация о версии системы
  */
