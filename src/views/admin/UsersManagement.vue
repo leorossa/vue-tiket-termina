@@ -89,7 +89,7 @@ const typeFilter = ref('');
 const loading = computed(() => userStore.loading);
 const users = computed(() => userStore.users);
 const availableRoles = computed(() => userStore.availableRoles);
-const isRoot = computed(() => userStore.isRoot);
+const isRoot = computed(() => userStore.hasRootAccess);
 
 const showUserModal = ref(false);
 const showDeleteConfirmModal = ref(false);

@@ -12,8 +12,9 @@ import LogsManagement from '@/views/admin/LogsManagement.vue';
 import OrdersManagement from '@/views/admin/OrdersManagement.vue';
 import Login from '@/views/Login.vue';
 
-// Импорт хранилища аутентификации
+// Импорт хранилищ
 import { useAuthStore } from '@/stores/authStore';
+import { useUserStore } from '@/stores/userStore';
 
 // Определение маршрутов
 const routes = [
@@ -45,43 +46,73 @@ const routes = [
         path: 'services',
         name: 'admin-services',
         component: ServicesManagement,
-        meta: { requiresAuth: true }
+        meta: { 
+          requiresAuth: true,
+          requiredPermission: 'CanManageServices'
+        }
       },
       {
         path: 'users',
         name: 'admin-users',
         component: UsersManagement,
-        meta: { requiresAuth: true }
+        meta: { 
+          requiresAuth: true,
+          requiredPermission: 'CanManageUsers'
+        }
       },
       {
         path: 'settings',
         name: 'admin-settings',
         component: Settings,
-        meta: { requiresAuth: true }
+        meta: { 
+          requiresAuth: true,
+          requiredPermission: 'CanManageSettings'
+        }
       },
       {
         path: 'category-visitors',
         name: 'admin-category-visitors',
         component: CategoryVisitorManagement,
-        meta: { requiresAuth: true }
+        meta: { 
+          requiresAuth: true,
+          requiredPermission: 'CanManageCategories'
+        }
       },
       {
         path: 'visit-objects',
         name: 'admin-visit-objects',
         component: VisitObjectManagement,
-        meta: { requiresAuth: true }
+        meta: { 
+          requiresAuth: true,
+          requiredPermission: 'CanManageVisitObjects'
+        }
+      },
+      {
+        path: 'reports',
+        name: 'admin-reports',
+        component: () => import('@/views/admin/Reports.vue'),
+        meta: { 
+          requiresAuth: true,
+          requiredPermission: 'CanViewReports'
+        }
       },
       {
         path: 'logs',
         name: 'admin-logs',
         component: LogsManagement,
-        meta: { requiresAuth: true, requiresAdminRole: true }
+        meta: { 
+          requiresAuth: true,
+          requiresRoot: true // Только для root-пользователей
+        }
       },
       {
         path: 'orders',
         name: 'admin-orders',
         component: OrdersManagement,
-        meta: { requiresAuth: true }
+        meta: { 
+          requiresAuth: true,
+          requiredPermission: 'CanManageOrders'
+        }
       }
       // Здесь будут другие маршруты админ-панели
     ]
@@ -104,20 +135,48 @@ const router = createRouter({
   routes,
 });
 
-// Защита маршрутов с проверкой аутентификации
+// Защита маршрутов с проверкой аутентификации и прав доступа
 router.beforeEach(async (to, from, next) => {
   // Проверяем, требуется ли аутентификация для маршрута
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   
   if (requiresAuth) {
-    // Получаем хранилище аутентификации
+    // Получаем хранилища
     const authStore = useAuthStore();
+    const userStore = useUserStore();
     
     // Проверяем состояние аутентификации
     const isAuthenticated = await authStore.checkAuth();
     
     if (isAuthenticated) {
-      // Если пользователь авторизован, пропускаем его
+      // Загружаем данные пользователя, если еще не загружены
+      if (!userStore.currentUser) {
+        await userStore.loadUserData();
+      }
+      
+      // Проверяем, требуется ли root-доступ для маршрута
+      const requiresRoot = to.matched.some(record => record.meta.requiresRoot);
+      if (requiresRoot && !userStore.hasRootAccess) {
+        // Если требуется root-доступ, но пользователь не root, перенаправляем на дашборд
+        console.warn('Доступ запрещен: требуется root-доступ');
+        next({ path: '/admin/dashboard' });
+        return;
+      }
+      
+      // Проверяем, требуется ли определенное разрешение для маршрута
+      const routeWithPermission = to.matched.find(record => record.meta.requiredPermission);
+      if (routeWithPermission) {
+        const requiredPermission = routeWithPermission.meta.requiredPermission;
+        
+        // Проверяем, есть ли у пользователя необходимое разрешение
+        if (!userStore.hasPermission(requiredPermission) && !userStore.hasRootAccess) {
+          console.warn(`Доступ запрещен: требуется разрешение ${requiredPermission}`);
+          next({ path: '/admin/dashboard' });
+          return;
+        }
+      }
+      
+      // Если все проверки пройдены, пропускаем пользователя
       next();
     } else {
       // Если не авторизован, перенаправляем на страницу входа

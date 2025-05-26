@@ -66,7 +66,7 @@ export const useUserStore = defineStore('user', {
     },
     
     // Проверка, является ли пользователь root-пользователем
-    isRoot: (state) => {
+    hasRootAccess: (state) => {
       return state.isRoot || (state.currentUser && state.currentUser.IsRoot);
     },
     
@@ -158,7 +158,8 @@ export const useUserStore = defineStore('user', {
       
       try {
         const isRootUser = await isCurrentUserRoot();
-        this.isRoot = isRootUser;
+        // Используем $patch для безопасного обновления состояния
+        this.$patch({ isRoot: isRootUser });
         return isRootUser;
       } catch (error) {
         this.error = error.message || 'Ошибка при проверке root-статуса';

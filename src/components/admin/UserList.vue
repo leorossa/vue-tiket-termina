@@ -93,7 +93,7 @@ const users = computed(() => userStore.users);
 const availableRoles = computed(() => userStore.availableRoles);
 
 // Проверка, является ли текущий пользователь root-пользователем
-const canManageRootUsers = computed(() => userStore.isRoot);
+const canManageRootUsers = computed(() => userStore.hasRootAccess);
 
 // Состояние модального окна подтверждения удаления
 const showConfirmModal = ref(false);

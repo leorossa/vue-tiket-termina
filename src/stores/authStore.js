@@ -1,6 +1,7 @@
 // Хранилище для управления аутентификацией
 import { defineStore } from 'pinia';
 import axios from 'axios';
+import { useUserStore } from './userStore';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -21,7 +22,13 @@ export const useAuthStore = defineStore('auth', {
     authToken: (state) => state.token,
     
     // Получение роли пользователя
-    userRole: (state) => state.user ? state.user.role : null,
+    userRole: (state) => state.user ? state.user.Role : null,
+    
+    // Проверка, является ли пользователь root-пользователем
+    isRoot: (state) => {
+      const userStore = useUserStore();
+      return userStore.isRoot;
+    },
     
     // Получение заголовков авторизации для запросов
     authHeaders: (state) => {
@@ -54,18 +61,21 @@ export const useAuthStore = defineStore('auth', {
           }
         });
         
-        // Если запрос успешен, сохраняем токен и информацию о пользователе
+        // Если запрос успешен, сохраняем токен
         this.token = token;
-        this.user = {
-          username,
-          role: 'admin' // В реальном приложении роль должна приходить с сервера
-        };
         
         // Сохраняем токен в localStorage для сохранения сессии
         localStorage.setItem('auth_token', token);
         
         // Устанавливаем заголовок авторизации по умолчанию для всех запросов
         axios.defaults.headers.common['Authorization'] = `Basic ${token}`;
+        
+        // Загружаем информацию о пользователе и его правах
+        const userStore = useUserStore();
+        await userStore.loadUserData();
+        
+        // Получаем информацию о текущем пользователе
+        this.user = userStore.currentUser;
         
         return { success: true, user: this.user };
       } catch (error) {
@@ -87,6 +97,10 @@ export const useAuthStore = defineStore('auth', {
       
       // Удаляем заголовок авторизации из запросов по умолчанию
       delete axios.defaults.headers.common['Authorization'];
+      
+      // Очищаем данные пользователя в хранилище пользователей
+      const userStore = useUserStore();
+      userStore.$reset();
     },
     
     // Проверка состояния аутентификации
@@ -104,12 +118,12 @@ export const useAuthStore = defineStore('auth', {
         // Если запрос успешен, устанавливаем заголовок авторизации по умолчанию
         axios.defaults.headers.common['Authorization'] = `Basic ${this.token}`;
         
-        // Получаем информацию о пользователе из токена
-        const [username] = atob(this.token).split(':');
-        this.user = {
-          username,
-          role: 'admin' // В реальном приложении роль должна приходить с сервера
-        };
+        // Загружаем информацию о пользователе и его правах
+        const userStore = useUserStore();
+        await userStore.loadUserData();
+        
+        // Получаем информацию о текущем пользователе
+        this.user = userStore.currentUser;
         
         return true;
       } catch (error) {
@@ -117,6 +131,12 @@ export const useAuthStore = defineStore('auth', {
         this.logout();
         return false;
       }
+    },
+    
+    // Проверка прав доступа
+    hasPermission(permission) {
+      const userStore = useUserStore();
+      return userStore.hasPermission(permission);
     }
   }
 });

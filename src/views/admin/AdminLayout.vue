@@ -5,37 +5,85 @@
         <h2 class="admin-sidebar-title">Админ-панель</h2>
       </div>
       <nav class="admin-sidebar-menu">
+        <!-- Дашборд доступен всем -->
         <router-link to="/admin/dashboard" class="admin-sidebar-item">
           <i class="admin-sidebar-icon">📊</i>
           <span>Дашборд</span>
         </router-link>
-        <router-link to="/admin/services" class="admin-sidebar-item">
-          <i class="admin-sidebar-icon">🎫</i>
+        
+        <!-- Услуги -->
+        <router-link 
+          v-if="hasPermission('CanManageServices')" 
+          to="/admin/services" 
+          class="admin-sidebar-item"
+        >
+          <i class="admin-sidebar-icon">🎟️</i>
           <span>Услуги</span>
         </router-link>
-        <router-link to="/admin/orders" class="admin-sidebar-item">
+        
+        <!-- Заказы -->
+        <router-link 
+          v-if="hasPermission('CanManageOrders') || isRootUser" 
+          to="/admin/orders" 
+          class="admin-sidebar-item"
+        >
           <i class="admin-sidebar-icon">📋</i>
           <span>Заказы</span>
         </router-link>
-        <router-link to="/admin/category-visitors" class="admin-sidebar-item">
+        
+        <!-- Категории посетителей -->
+        <router-link 
+          v-if="hasPermission('CanManageCategories')" 
+          to="/admin/category-visitors" 
+          class="admin-sidebar-item"
+        >
           <i class="admin-sidebar-icon">👪</i>
           <span>Категории посетителей</span>
         </router-link>
-        <router-link to="/admin/visit-objects" class="admin-sidebar-item">
+        
+        <!-- Объекты посещения -->
+        <router-link 
+          v-if="hasPermission('CanManageVisitObjects')" 
+          to="/admin/visit-objects" 
+          class="admin-sidebar-item"
+        >
           <i class="admin-sidebar-icon">🏢</i>
           <span>Объекты посещения</span>
         </router-link>
-        <router-link to="/admin/users" class="admin-sidebar-item">
+        
+        <!-- Пользователи -->
+        <router-link 
+          v-if="hasPermission('CanManageUsers')" 
+          to="/admin/users" 
+          class="admin-sidebar-item"
+        >
           <i class="admin-sidebar-icon">👥</i>
           <span>Пользователи</span>
         </router-link>
-        <router-link to="/admin/settings" class="admin-sidebar-item">
+        
+        <!-- Настройки -->
+        <router-link 
+          v-if="hasPermission('CanManageSettings')" 
+          to="/admin/settings" 
+          class="admin-sidebar-item"
+        >
           <i class="admin-sidebar-icon">⚙️</i>
           <span>Настройки</span>
         </router-link>
-        <!-- Ссылка на логи системы, видна только администраторам -->
+        
+        <!-- Отчеты -->
         <router-link 
-          v-if="isAdmin" 
+          v-if="hasPermission('CanViewReports')" 
+          to="/admin/reports" 
+          class="admin-sidebar-item"
+        >
+          <i class="admin-sidebar-icon">📈</i>
+          <span>Отчеты</span>
+        </router-link>
+        
+        <!-- Логи системы (только для root) -->
+        <router-link 
+          v-if="isRootUser" 
           to="/admin/logs" 
           class="admin-sidebar-item"
         >
@@ -56,8 +104,9 @@
         </div>
         <div class="admin-user-menu">
           <div class="admin-user-info">
-            <span class="admin-user-name">{{ currentUser.username }}</span>
-            <span v-if="currentUser.role" class="admin-user-role admin-badge primary">{{ getRoleName(currentUser.role) }}</span>
+            <span class="admin-user-name">{{ currentUser.UserName || 'Неизвестный пользователь' }}</span>
+            <span v-if="currentUser.Role" class="admin-user-role admin-badge primary">{{ getRoleName(currentUser.Role) }}</span>
+            <span v-if="isRootUser" class="admin-user-role admin-badge root">Root</span>
           </div>
           <button class="admin-button secondary" @click="logout">Выйти</button>
         </div>
@@ -74,32 +123,38 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useUserStore } from '@/stores/userStore';
 
-// Инициализация хранилища аутентификации
+// Инициализация хранилищ
 const authStore = useAuthStore();
+const userStore = useUserStore();
 const route = useRoute();
 const router = useRouter();
 
 // Получение текущего пользователя из хранилища
 const currentUser = computed(() => {
-  return authStore.currentUser || { username: 'Неизвестный пользователь', role: '' };
+  return userStore.currentUser || { UserName: 'Неизвестный пользователь', Role: '' };
 });
 
-// Проверка, является ли пользователь администратором
-const isAdmin = computed(() => {
-  const role = currentUser.value.role;
-  return role === 'admin' || role === 'root';
-});
+// Проверка, является ли пользователь root-пользователем
+const isRootUser = computed(() => userStore.hasRootAccess);
+
+// Функция проверки прав доступа
+function hasPermission(permission) {
+  return userStore.hasPermission(permission) || isRootUser.value;
+}
 
 // Определение заголовка страницы на основе текущего маршрута
 const pageTitle = computed(() => {
   const routeTitles = {
     '/admin/dashboard': 'Дашборд',
     '/admin/services': 'Управление услугами',
+    '/admin/orders': 'Управление заказами',
     '/admin/category-visitors': 'Управление категориями посетителей',
     '/admin/visit-objects': 'Управление объектами посещения',
     '/admin/users': 'Управление пользователями',
     '/admin/settings': 'Настройки системы',
+    '/admin/reports': 'Отчеты',
     '/admin/logs': 'Логи системы'
   };
   
@@ -117,9 +172,9 @@ const logout = () => {
 // Получение названия роли пользователя
 const getRoleName = (role) => {
   const roleNames = {
-    'admin': 'Администратор',
-    'manager': 'Менеджер',
-    'cashier': 'Кассир'
+    'ADMIN': 'Администратор',
+    'MANAGER': 'Менеджер',
+    'USER': 'Пользователь'
   };
   
   return roleNames[role] || role;
@@ -148,12 +203,25 @@ function loadTerminalInfo() {
 }
 
 // Загрузка данных при монтировании компонента
-onMounted(() => {
-  // Проверка аутентификации
-  authStore.checkAuth();
-  
-  // Загрузка информации о терминале
-  loadTerminalInfo();
+onMounted(async () => {
+  try {
+    // Проверка аутентификации
+    const isAuthenticated = await authStore.checkAuth();
+    
+    if (isAuthenticated) {
+      // Загрузка данных пользователя, включая права доступа
+      await userStore.loadUserData();
+    } else {
+      // Если пользователь не авторизован, перенаправляем на страницу входа
+      router.push('/login');
+    }
+    
+    // Загрузка информации о терминале
+    loadTerminalInfo();
+  } catch (error) {
+    console.error('Ошибка при инициализации компонента:', error);
+    router.push('/login');
+  }
 });
 
 // Прослушивание события обновления информации о терминале
@@ -202,7 +270,7 @@ window.addEventListener('terminalSettingsUpdated', () => {
 
 .admin-sidebar-menu {
   padding: 1rem 0;
-  flex: 1;
+  overflow-y: auto;
 }
 
 .admin-sidebar-item {
@@ -215,18 +283,18 @@ window.addEventListener('terminalSettingsUpdated', () => {
 }
 
 .admin-sidebar-item:hover {
-  background-color: var(--admin-bg-hover, #edf2f7);
+  background-color: var(--admin-hover-bg, rgba(0, 0, 0, 0.05));
 }
 
 .admin-sidebar-item.router-link-active {
-  background-color: var(--admin-primary-light, #ebf4ff);
+  background-color: var(--admin-active-bg, rgba(59, 130, 246, 0.1));
   color: var(--admin-primary, #3b82f6);
   font-weight: 500;
 }
 
 .admin-sidebar-icon {
   margin-right: 0.75rem;
-  font-style: normal;
+  font-size: 1.25rem;
 }
 
 .admin-main {
@@ -241,13 +309,13 @@ window.addEventListener('terminalSettingsUpdated', () => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
+  background-color: white;
   border-bottom: 1px solid var(--admin-border-color, #e2e8f0);
-  background-color: #fff;
 }
 
 .admin-header-content {
   display: flex;
-  flex-direction: column;
+  align-items: center;
 }
 
 .admin-header-title {
@@ -258,25 +326,19 @@ window.addEventListener('terminalSettingsUpdated', () => {
 }
 
 .admin-terminal-info {
+  margin-left: 1rem;
   display: flex;
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: var(--admin-text-secondary, #718096);
+  align-items: center;
 }
 
 .terminal-highlight {
-  color: var(--admin-danger, #e53e3e);
-  font-weight: 600;
-}
-
-.admin-terminal-name {
+  background-color: var(--admin-primary-light, rgba(59, 130, 246, 0.1));
+  color: var(--admin-primary, #3b82f6);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
   font-weight: 500;
   margin-right: 0.5rem;
-}
-
-.admin-terminal-name::after {
-  content: '•';
-  margin-left: 0.5rem;
 }
 
 .admin-user-menu {
@@ -285,20 +347,41 @@ window.addEventListener('terminalSettingsUpdated', () => {
 }
 
 .admin-user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
   margin-right: 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .admin-user-name {
   font-weight: 500;
-  color: var(--admin-text-primary, #2d3748);
+  margin-right: 0.5rem;
 }
 
 .admin-user-role {
-  margin-top: 0.25rem;
   font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 0.75em;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.25rem;
+}
+
+.admin-badge.primary {
+  background-color: var(--admin-primary, #3b82f6);
+  color: white;
+}
+
+.admin-badge.root {
+  background-color: #dc3545;
+  color: white;
 }
 
 .admin-content {
@@ -306,5 +389,38 @@ window.addEventListener('terminalSettingsUpdated', () => {
   padding: 1.5rem;
   overflow-y: auto;
   background-color: var(--admin-bg-primary, #f1f5f9);
+}
+
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+  
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+  }
+  
+  .admin-sidebar-menu {
+    display: flex;
+    overflow-x: auto;
+    padding: 0.5rem;
+  }
+  
+  .admin-sidebar-item {
+    padding: 0.5rem;
+    white-space: nowrap;
+  }
+  
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .admin-user-menu {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 </style>
