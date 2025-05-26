@@ -101,3 +101,23 @@ export async function getOrgInfo() {
     throw error;
   }
 }
+
+/**
+ * Редкатирование информации о разработчике
+ * @param {Object} data - Данные для редактирования
+ * @returns {Promise<Object>} Результат редактирования
+ */
+export async function updateVersionInfo(data) {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/Version/Update`, data, {
+      headers: getAuthHeaders()
+    });
+    
+    console.log('Информация о разработчике обновлена:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Ошибка при редактировании информации о разработчике:', error);
+    throw error;
+  }
+}

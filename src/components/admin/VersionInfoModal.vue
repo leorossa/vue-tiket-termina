@@ -112,6 +112,14 @@
         <button @click="copyToClipboard" class="admin-button secondary">
           Копировать информацию
         </button>
+        <button 
+          v-if="isAdmin" 
+          @click="$emit('edit', versionInfo)" 
+          class="admin-button warning"
+          type="button"
+        >
+          Редактировать
+        </button>
         <button @click="$emit('close')" class="admin-button primary">
           Закрыть
         </button>
@@ -121,7 +129,17 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
+import { defineProps, defineEmits, computed } from 'vue';
+import { useAuthStore } from '@/stores/authStore';
+
+// Получаем хранилище авторизации для проверки роли пользователя
+const authStore = useAuthStore();
+
+// Проверяем, имеет ли пользователь права администратора
+const isAdmin = computed(() => {
+  const role = authStore.userRole;
+  return role === 'admin' || role === 'root';
+});
 
 const props = defineProps({
   versionInfo: {
@@ -135,7 +153,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'edit']);
 
 // Форматирование даты
 function formatDate(dateString) {

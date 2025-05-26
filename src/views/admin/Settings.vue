@@ -180,6 +180,14 @@
       v-if="isVersionInfoModalVisible" 
       :versionInfo="versionInfo" 
       @close="isVersionInfoModalVisible = false" 
+      @edit="handleEditVersion"
+    />
+    
+    <EditVersionInfoModal
+      v-if="isEditVersionInfoModalVisible"
+      :versionInfo="versionInfo"
+      @close="isEditVersionInfoModalVisible = false"
+      @save="saveVersionInfo"
     />
     
     <OrgInfoModal 
@@ -192,8 +200,9 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import { getVersionInfo, getOrgInfo } from '@/api/infoApi';
+import { getVersionInfo, getOrgInfo, updateVersionInfo } from '@/api/infoApi';
 import VersionInfoModal from '@/components/admin/VersionInfoModal.vue';
+import EditVersionInfoModal from '@/components/admin/EditVersionInfoModal.vue';
 import OrgInfoModal from '@/components/admin/OrgInfoModal.vue';
 
 // Общие настройки
@@ -352,14 +361,60 @@ const formatDate = (date) => {
 };
 
 // Информация о версии и организации
-const versionInfo = ref({
-  Gate: [],
-  System: [],
-  Requisite: []
-});
+const versionInfo = ref({});
 const orgInfo = ref([]);
 const isVersionInfoModalVisible = ref(false);
+const isEditVersionInfoModalVisible = ref(false);
 const isOrgInfoModalVisible = ref(false);
+
+// Обработка события редактирования информации о версии
+function handleEditVersion(data) {
+  // Сохраняем данные для редактирования
+  versionInfo.value = { ...data };
+  
+  // Закрываем модальное окно просмотра
+  isVersionInfoModalVisible.value = false;
+  
+  // Открываем модальное окно редактирования
+  isEditVersionInfoModalVisible.value = true;
+}
+
+// Сохранение отредактированной информации о версии
+function saveVersionInfo(data) {
+  // Обновляем данные
+  versionInfo.value = { ...data };
+  
+  // Закрываем модальное окно редактирования
+  isEditVersionInfoModalVisible.value = false;
+  
+  // Вызываем функцию обновления на сервере
+  updateVersion();
+}
+
+// Обновление информации о версии на сервере
+async function updateVersion() {
+  try {
+    // Подготавливаем данные для отправки
+    const dataToUpdate = {
+      Gate: versionInfo.value.Gate,
+      System: versionInfo.value.System,
+      Requisite: versionInfo.value.Requisite
+    };
+    
+    // Отправляем запрос на обновление
+    const response = await updateVersionInfo(dataToUpdate);
+    console.log('Информация о разработчике обновлена:', response);
+    
+    // Показываем уведомление об успехе
+    alert('Информация о разработчике успешно обновлена');
+    
+    // Обновляем информацию о версии
+    await fetchVersionInfo();
+  } catch (error) {
+    console.error('Ошибка при обновлении информации о разработчике:', error);
+    alert('Не удалось обновить информацию о разработчике: ' + (error.message || 'Неизвестная ошибка'));
+  }
+}
 
 // Загрузка информации о версии
 async function fetchVersionInfo() {
