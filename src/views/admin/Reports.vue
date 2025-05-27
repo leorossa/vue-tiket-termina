@@ -184,9 +184,10 @@ async function generateReport() {
     
     // Подготавливаем данные для отчета
     reportData.value = orderStore.orders.map(order => ({
-      'ID заказа': order.OrderId,
+      'ID заказа': order.Id,
       'Штрих-код': order.OrderBarcode,
-      'Посетитель': order.VisitorName1,
+      'Имя': order.VisitorName1,
+      'Фамилия': order.VisitorName2,
       'Телефон': order.VisitorPhone,
       'Статус': getOrderStatusName(order.OrderStateId),
       'Стоимость': order.Cost,
@@ -223,7 +224,7 @@ async function generateReport() {
 function getOrderStatusName(statusId) {
   const statuses = {
     0: 'Новый',
-    1: 'Оплачен',
+    5: 'Оплачен',
     2: 'Отменен',
     3: 'Возвращен',
     4: 'Использован'

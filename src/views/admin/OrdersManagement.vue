@@ -351,7 +351,7 @@ const newStatusId = ref(0);
 // Опции статусов заказа
 const statusOptions = {
   0: 'Новый',
-  1: 'Оплачен',
+  5: 'Оплачен',
   2: 'Отменен',
   3: 'Возвращен',
   4: 'Использован'
@@ -412,7 +412,7 @@ function sortBy(column) {
 function getStatusClass(statusId) {
   const statusClasses = {
     0: 'status-new',
-    1: 'status-paid',
+    5: 'status-paid',
     2: 'status-canceled',
     3: 'status-returned',
     4: 'status-used'
