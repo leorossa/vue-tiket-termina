@@ -61,9 +61,9 @@
       <table class="admin-table">
         <thead>
           <tr>
-            <th @click="sortBy('OrderId')" class="sortable">
+            <th @click="sortBy('Id')" class="sortable">
               ID
-              <span v-if="sortColumn === 'OrderId'" class="sort-icon">
+              <span v-if="sortColumn === 'Id'" class="sort-icon">
                 {{ sortDirection === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
@@ -101,8 +101,8 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="order in filteredOrders" :key="order.OrderId">
-            <td>{{ order.OrderId }}</td>
+          <tr v-for="order in filteredOrders" :key="order.Id">
+            <td>{{ order.Id }}</td>
             <td>{{ order.OrderBarcode }}</td>
             <td>
               {{ order.VisitorName1 }}
@@ -151,7 +151,7 @@
     <div v-if="showOrderDetailsModal" class="admin-modal-overlay" @click.self="showOrderDetailsModal = false">
       <div class="admin-modal">
         <div class="admin-modal-header">
-          <h2>Детали заказа #{{ selectedOrder.OrderId }}</h2>
+          <h2>Детали заказа #{{ selectedOrder.Id }}</h2>
           <button @click="showOrderDetailsModal = false" class="admin-modal-close">&times;</button>
         </div>
         <div class="admin-modal-body">
@@ -161,7 +161,7 @@
               <div class="admin-info-list">
                 <div class="admin-info-item">
                   <span class="admin-info-label">ID заказа:</span>
-                  <span class="admin-info-value">{{ selectedOrder.OrderId }}</span>
+                  <span class="admin-info-value">{{ selectedOrder.Id }}</span>
                 </div>
                 <div class="admin-info-item">
                   <span class="admin-info-label">Штрих-код:</span>
@@ -261,7 +261,7 @@
     <div v-if="showStatusModal" class="admin-modal-overlay" @click.self="showStatusModal = false">
       <div class="admin-modal">
         <div class="admin-modal-header">
-          <h2>Изменение статуса заказа #{{ selectedOrder.OrderId }}</h2>
+          <h2>Изменение статуса заказа #{{ selectedOrder.Id }}</h2>
           <button @click="showStatusModal = false" class="admin-modal-close">&times;</button>
         </div>
         <div class="admin-modal-body">
@@ -305,7 +305,7 @@
         </div>
         <div class="admin-modal-body">
           <p class="confirmation-message">
-            Вы действительно хотите удалить заказ #{{ selectedOrder.OrderId }} из списка?
+            Вы действительно хотите удалить заказ #{{ selectedOrder.Id }} из списка?
           </p>
           <p class="warning-message">
             Это действие удалит заказ только из локального списка, но не из базы данных.
@@ -338,7 +338,7 @@ const dateRange = ref({
 });
 
 const searchQuery = ref('');
-const sortColumn = ref('OrderId');
+const sortColumn = ref('Id');
 const sortDirection = ref('desc');
 
 // Состояние модальных окон
@@ -375,7 +375,7 @@ const filteredOrders = computed(() => {
       (order.VisitorName3 && order.VisitorName3.toLowerCase().includes(query)) ||
       (order.VisitorPhone && order.VisitorPhone.toLowerCase().includes(query)) ||
       (order.OrderBarcode && order.OrderBarcode.toLowerCase().includes(query)) ||
-      (order.OrderId.toString().includes(query))
+      (order.Id.toString().includes(query))
     );
   }
   
@@ -466,7 +466,7 @@ function changeStatus() {
   }
   
   // Обновляем статус только локально
-  orderStore.updateOrderStatusLocally(selectedOrder.value.OrderId, newStatusId.value);
+  orderStore.updateOrderStatusLocally(selectedOrder.value.Id, newStatusId.value);
   
   // Обновляем статус в выбранном заказе
   selectedOrder.value.OrderStateId = newStatusId.value;
@@ -483,7 +483,7 @@ function confirmCancelOrder(order) {
 // Удаление заказа из списка (только локально, без API-вызова)
 function removeOrder() {
   // Удаляем заказ только из локального состояния
-  orderStore.removeOrderLocally(selectedOrder.value.OrderId);
+  orderStore.removeOrderLocally(selectedOrder.value.Id);
   showCancelConfirmation.value = false;
 }
 
