@@ -123,32 +123,86 @@ const formData = reactive({
   Requisite: []
 });
 
-// При монтировании компонента копируем данные из props в formData
+// Форматирование даты для инпута типа date
+function formatDateForInput(dateString) {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch (e) {
+    console.error('Ошибка при преобразовании даты:', e);
+    return '';
+  }
+}
+
+// При монтировании компонента копируем данные из props в formData и форматируем даты
 onMounted(() => {
   if (props.versionInfo.Gate) {
-    formData.Gate = JSON.parse(JSON.stringify(props.versionInfo.Gate));
+    // Копируем данные и форматируем даты
+    formData.Gate = JSON.parse(JSON.stringify(props.versionInfo.Gate)).map(item => {
+      if (item.DtLicenceFinish) {
+        item.DtLicenceFinish = formatDateForInput(item.DtLicenceFinish);
+      }
+      return item;
+    });
   }
   if (props.versionInfo.System) {
-    formData.System = JSON.parse(JSON.stringify(props.versionInfo.System));
+    // Копируем данные и форматируем даты
+    formData.System = JSON.parse(JSON.stringify(props.versionInfo.System)).map(item => {
+      if (item.DtLicenceFinish) {
+        item.DtLicenceFinish = formatDateForInput(item.DtLicenceFinish);
+      }
+      return item;
+    });
   }
   if (props.versionInfo.Requisite) {
     formData.Requisite = JSON.parse(JSON.stringify(props.versionInfo.Requisite));
   }
 });
 
-// Форматирование даты для инпута типа date
-function formatDateForInput(dateString) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  return date.toISOString().split('T')[0];
+
+
+// Преобразование даты в ISO формат для отправки на сервер
+function convertDateToISO(dateString) {
+  if (!dateString) return null;
+  try {
+    // Проверяем, что дата в формате yyyy-MM-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      // Добавляем время и зону, чтобы получить полный ISO формат
+      return `${dateString}T00:00:00Z`;
+    }
+    // Если дата уже в ISO формате, возвращаем как есть
+    return dateString;
+  } catch (e) {
+    console.error('Ошибка при преобразовании даты в ISO формат:', e);
+    return null;
+  }
 }
 
 // Сохранение изменений
 function saveChanges() {
-  // Создаем копию данных для отправки
+  // Создаем копию данных для отправки и преобразуем даты в ISO формат
   const dataToSave = {
-    Gate: formData.Gate,
-    System: formData.System,
+    Gate: formData.Gate.map(item => {
+      const newItem = {...item};
+      if (newItem.DtLicenceFinish) {
+        newItem.DtLicenceFinish = convertDateToISO(newItem.DtLicenceFinish);
+      }
+      return newItem;
+    }),
+    System: formData.System.map(item => {
+      const newItem = {...item};
+      if (newItem.DtLicenceFinish) {
+        newItem.DtLicenceFinish = convertDateToISO(newItem.DtLicenceFinish);
+      }
+      return newItem;
+    }),
     Requisite: formData.Requisite
   };
   
