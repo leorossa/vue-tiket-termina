@@ -170,14 +170,14 @@ const formatOrdersForDisplay = (orders, parseDate) => {
 // Преобразование статуса заказа в формат для отображения
 const mapOrderStatusToDisplay = (statusId) => {
   const statusMap = {
-    0: 'pending',   // Новый
-    1: 'completed', // Оплачен
-    2: 'cancelled', // Отменен
-    3: 'refunded',  // Возвращен
-    4: 'completed'  // Использован
+    0: 'Новый',   
+    5: 'Оплачен', 
+    2: 'Отменен', 
+    3: 'Возвращен', 
+    4: 'Использован'  
   };
   
-  return statusMap[statusId] || 'pending';
+  return statusMap[statusId] || 'Новый';
 };
 
 // Популярные услуги
@@ -235,10 +235,11 @@ function formatDate(date) {
 // Получение класса для статуса
 function getStatusClass(status) {
   const statusClasses = {
-    completed: 'success',
-    pending: 'warning',
-    refunded: 'danger',
-    cancelled: 'danger'
+    0: 'new',
+    5: 'SOLD',
+    2: 'warning',
+    3: 'danger',
+    4: 'danger'
   };
   
   return statusClasses[status] || 'primary';
@@ -247,10 +248,11 @@ function getStatusClass(status) {
 // Получение названия статуса
 function getStatusName(status) {
   const statusNames = {
-    completed: 'Выполнен',
-    pending: 'В обработке',
-    refunded: 'Возврат',
-    cancelled: 'Отменен'
+    0: 'Новый',
+    5: 'Выполнен',
+    2: 'В обработке',
+    3: 'Возврат',
+    4: 'Отменен'
   };
   
   return statusNames[status] || status;
