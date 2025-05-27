@@ -13,6 +13,7 @@
           >
             Основные данные
           </div>
+          <!-- Для простой услуги оставляем все вкладки -->
           <div 
             :class="['admin-tab', { active: activeTab === 'objects' }]" 
             @click="activeTab = 'objects'"
@@ -75,31 +76,37 @@
               <div class="admin-form-group">
                 <label>Настройки услуги:</label>
                 <div class="admin-checkbox-grid">
-                  <label class="admin-checkbox-item">
-                    <input type="checkbox" v-model="formData.isNeedVisitDate" class="admin-checkbox" />
-                    <span>Требуется дата посещения</span>
-                  </label>
-                  <label class="admin-checkbox-item">
-                    <input type="checkbox" v-model="formData.isNeedVisitTime" class="admin-checkbox" />
-                    <span>Требуется время посещения</span>
-                  </label>
-                  <label class="admin-checkbox-item">
-                    <input type="checkbox" v-model="formData.isPROCultureChecked" class="admin-checkbox" />
-                    <span>Проверено в PRO.Культура</span>
-                  </label>
-                  <label class="admin-checkbox-item">
-                    <input type="checkbox" v-model="formData.isDisableEditVisitObject" class="admin-checkbox" />
-                    <span>Запретить редактирование объекта</span>
-                  </label>
-                  <label class="admin-checkbox-item">
-                    <input type="checkbox" v-model="formData.isDisableEditVisitor" class="admin-checkbox" />
-                    <span>Запретить редактирование посетителя</span>
-                  </label>
+                  <!-- Для простой услуги скрываем чекбокс даты посещения, он всегда включен -->
+                  <template v-if="!isSimpleService">
+                    <label class="admin-checkbox-item">
+                      <input type="checkbox" v-model="formData.isNeedVisitDate" class="admin-checkbox" />
+                      <span>Требуется дата посещения</span>
+                    </label>
+                  </template>
+                  <!-- Для простой услуги скрываем остальные настройки -->
+                  <template v-if="!isSimpleService">
+                    <label class="admin-checkbox-item">
+                      <input type="checkbox" v-model="formData.isNeedVisitTime" class="admin-checkbox" />
+                      <span>Требуется время посещения</span>
+                    </label>
+                    <label class="admin-checkbox-item">
+                      <input type="checkbox" v-model="formData.isPROCultureChecked" class="admin-checkbox" />
+                      <span>Проверено в PRO.Культура</span>
+                    </label>
+                    <label class="admin-checkbox-item">
+                      <input type="checkbox" v-model="formData.isDisableEditVisitObject" class="admin-checkbox" />
+                      <span>Запретить редактирование объекта</span>
+                    </label>
+                    <label class="admin-checkbox-item">
+                      <input type="checkbox" v-model="formData.isDisableEditVisitor" class="admin-checkbox" />
+                      <span>Запретить редактирование посетителя</span>
+                    </label>
+                  </template>
                 </div>
               </div>
 
-              <!-- Параметры расчета стоимости -->
-              <div class="admin-form-group">
+              <!-- Параметры расчета стоимости (скрываем для простой услуги) -->
+              <div class="admin-form-group" v-if="!isSimpleService">
                 <label>Параметры расчета стоимости:</label>
                 <div class="admin-checkbox-grid">
                   <label class="admin-checkbox-item">
@@ -121,8 +128,8 @@
                 </div>
               </div>
 
-              <!-- Период действия услуги -->
-              <div class="admin-form-group">
+              <!-- Период действия услуги (скрываем для простой услуги) -->
+              <div class="admin-form-group" v-if="!isSimpleService">
                 <label>Период действия услуги:</label>
                 <div class="d-flex gap-2">
                   <div class="flex-grow-1">
@@ -146,8 +153,8 @@
                 </div>
               </div>
 
-              <!-- PRO.Культура -->
-              <div class="admin-form-group">
+              <!-- PRO.Культура (скрываем для простой услуги) -->
+              <div class="admin-form-group" v-if="!isSimpleService">
                 <label for="proCultureIdentifier">ID в PRO.Культура:</label>
                 <input
                   id="proCultureIdentifier"
@@ -208,6 +215,9 @@ const props = defineProps({
     default: false
   }
 });
+
+// Проверка, является ли услуга простой
+const isSimpleService = computed(() => props.service && props.service.IsSimpleService);
 
 // Определение событий
 const emit = defineEmits(['close', 'save']);
@@ -319,7 +329,8 @@ function saveService() {
       Description: formData.description,
       Cost: parseFloat(formData.cost),
       ActiveKindId: formData.activeKindId,
-      IsNeedVisitDate: formData.isNeedVisitDate,
+      // Для простой услуги всегда устанавливаем IsNeedVisitDate = true
+      IsNeedVisitDate: isSimpleService.value ? true : formData.isNeedVisitDate,
       IsNeedVisitTime: formData.isNeedVisitTime,
       DtBegin: formData.dtBegin ? new Date(formData.dtBegin).toISOString() : null,
       DtEnd: formData.dtEnd ? new Date(formData.dtEnd).toISOString() : null,
@@ -331,6 +342,8 @@ function saveService() {
       IsCategoryVisitorUseForCost: formData.isCategoryVisitorUseForCost,
       IsVisitorCountUseForCost: formData.isVisitorCountUseForCost,
       IsUseOneCategory: formData.isUseOneCategory,
+      // Сохраняем флаг простой услуги
+      IsSimpleService: isSimpleService.value,
       // Связанные объекты
       VisitObject: selectedVisitObjects.value,
       CategoryVisitor: selectedCategoryVisitors.value,

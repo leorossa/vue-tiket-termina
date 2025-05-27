@@ -2,8 +2,13 @@
   <div class="admin-container">
     <div class="admin-header">
       <h1 class="admin-title">Управление услугами</h1>
-      <button @click="openCreateServiceModal" class="admin-button primary">
-        <i class="fas fa-plus"></i> Добавить услугу
+      <!-- Кнопка добавления простой услуги (доступна всем) -->
+      <button @click="openCreateSimpleServiceModal" class="admin-button primary" style="margin-right: 10px;">
+        <i class="fas fa-plus"></i> Добавить простую услугу
+      </button>
+      <!-- Кнопка добавления расширенной услуги (только для root) -->
+      <button v-if="userStore.hasRootAccess" @click="openCreateServiceModal" class="admin-button primary">
+        <i class="fas fa-plus"></i> Добавить расширенную услугу
       </button>
     </div>
 
@@ -19,7 +24,7 @@
 
     <div v-else-if="services.length === 0" class="admin-empty">
       <p>Услуги не найдены</p>
-      <button @click="openCreateServiceModal" class="admin-button primary">
+      <button @click="openCreateSimpleServiceModal" class="admin-button primary">
         Добавить первую услугу
       </button>
     </div>
@@ -117,9 +122,11 @@ import { ref, computed, onMounted } from 'vue';
 import ServiceForm from '@/components/admin/ServiceForm.vue';
 import DeleteConfirmation from '@/components/admin/DeleteConfirmation.vue';
 import { useServiceStore } from '@/stores/serviceStore';
+import { useUserStore } from '@/stores/userStore';
 
-// Стор услуг
+// Сторы
 const serviceStore = useServiceStore();
+const userStore = useUserStore();
 
 // Состояния компонента
 const searchQuery = ref('');
@@ -168,9 +175,26 @@ async function fetchServices() {
   }
 }
 
-// Открытие модального окна создания услуги
+// Открытие модального окна создания расширенной услуги
 function openCreateServiceModal() {
   currentService.value = {};
+  isEditing.value = false;
+  showServiceModal.value = true;
+}
+
+// Открытие модального окна создания простой услуги
+function openCreateSimpleServiceModal() {
+  // Создаем простую услугу с предустановленными параметрами
+  currentService.value = {
+    // Предустановленный флаг "Требуется дата посещения"
+    NeedVisitDate: true,
+    // Скрываем остальные флаги и поля
+    NeedVisitTime: false,
+    NeedPeriod: false,
+    NeedProCulture: false,
+    // Устанавливаем тип услуги как простая
+    IsSimpleService: true
+  };
   isEditing.value = false;
   showServiceModal.value = true;
 }
