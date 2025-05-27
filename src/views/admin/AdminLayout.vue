@@ -2,7 +2,9 @@
   <div class="admin-layout">
     <aside class="admin-sidebar">
       <div class="admin-sidebar-header">
-        <h2 class="admin-sidebar-title">Админ-панель</h2>
+        <h2 class="admin-sidebar-title">
+          {{ isRootUser ? 'Root-' : (hasAdminAccess ? 'Admin-' : 'User-') }}панель
+        </h2>
       </div>
       <nav class="admin-sidebar-menu">
         <!-- Дашборд доступен всем -->

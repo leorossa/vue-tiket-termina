@@ -21,8 +21,8 @@
                 <input type="text" v-model="item.Version" class="admin-input" />
               </div>
               <div>
-                <label>Дата:</label>
-                <input type="date" v-model="item.Date" class="admin-input" />
+                <label>Срок лицензии:</label>
+                <input type="date" v-model="item.DtLicenceFinish" class="admin-input" />
               </div>
             </div>
           </div>
@@ -42,8 +42,8 @@
                 <input type="text" v-model="item.Version" class="admin-input" />
               </div>
               <div>
-                <label>Дата:</label>
-                <input type="date" v-model="item.Date" class="admin-input" />
+                <label>Срок лицензии:</label>
+                <input type="date" v-model="item.DtLicenceFinish" class="admin-input" />
               </div>
             </div>
           </div>
@@ -51,7 +51,7 @@
         
         <!-- Секция Requisite -->
         <div class="version-section">
-          <h4>Реквизиты разработчика (Requisite)</h4>
+          <h4>Реквизиты (Requisite)</h4>
           <div class="admin-form-group" v-for="(item, index) in formData.Requisite" :key="`requisite-${index}`">
             <div class="version-item-edit">
               <div>
@@ -59,8 +59,28 @@
                 <input type="text" v-model="item.Name" class="admin-input" />
               </div>
               <div>
-                <label>Значение:</label>
-                <input type="text" v-model="item.Value" class="admin-input" />
+                <label>Город:</label>
+                <input type="text" v-model="item.City" class="admin-input" />
+              </div>
+              <div>
+                <label>Адрес:</label>
+                <input type="text" v-model="item.Address" class="admin-input" />
+              </div>
+              <div>
+                <label>Телефон:</label>
+                <input type="text" v-model="item.Phone1" class="admin-input" />
+              </div>
+              <div>
+                <label>Факс:</label>
+                <input type="text" v-model="item.Fax" class="admin-input" />
+              </div>
+              <div>
+                <label>Время начала:</label>
+                <input type="time" v-model="item.DtBegin" class="admin-input" />
+              </div>
+              <div>
+                <label>Время окончания:</label>
+                <input type="time" v-model="item.DtEnd" class="admin-input" />
               </div>
             </div>
           </div>

@@ -113,7 +113,7 @@
           Копировать информацию
         </button>
         <button 
-          v-if="isAdmin" 
+          v-if="isRoot"
           @click="$emit('edit', versionInfo)" 
           class="admin-button warning"
           type="button"
@@ -129,18 +129,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from 'vue';
-import { useAuthStore } from '@/stores/authStore';
-
-// Получаем хранилище авторизации для проверки роли пользователя
-const authStore = useAuthStore();
-
-// Проверяем, имеет ли пользователь права администратора
-const isAdmin = computed(() => {
-  const role = authStore.userRole;
-  return role === 'admin' || role === 'root';
-});
-
+// Используем только проп isRoot для контроля доступа
 const props = defineProps({
   versionInfo: {
     type: Object,
@@ -148,9 +137,14 @@ const props = defineProps({
     default: () => ({
       Gate: [],
       System: [],
-      Requisite: []
     })
-  }
+  },
+  // Флаг root-доступа
+  isRoot: {
+    type: Boolean,
+    default: false
+  },
+  Requisite: []
 });
 
 const emit = defineEmits(['close', 'edit']);

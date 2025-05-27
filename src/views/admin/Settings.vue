@@ -179,6 +179,7 @@
     <VersionInfoModal 
       v-if="isVersionInfoModalVisible" 
       :versionInfo="versionInfo" 
+      :isRoot="isRoot" 
       @close="isVersionInfoModalVisible = false" 
       @edit="handleEditVersion"
     />
@@ -200,15 +201,21 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useUserStore } from '@/stores/userStore';
 import { getVersionInfo, getOrgInfo, updateVersionInfo } from '@/api/infoApi';
 import VersionInfoModal from '@/components/admin/VersionInfoModal.vue';
 import EditVersionInfoModal from '@/components/admin/EditVersionInfoModal.vue';
 import OrgInfoModal from '@/components/admin/OrgInfoModal.vue';
 
+// Получаем доступ к userStore
+const userStore = useUserStore();
+// Проверяем root-доступ через геттер
+const isRoot = userStore.hasRootAccess;
+
 // Общие настройки
 const generalSettings = reactive({
-  terminalName: 'Терминал #1',
-  location: 'Центральный парк'
+  terminalName: 'Название терминала',
+  location: 'Местоположение'
 });
 
 // Загрузка сохраненных настроек терминала
@@ -234,20 +241,22 @@ onMounted(() => {
   loadTerminalSettings();
 });
 
-// Настройки API
+/* Настройки API
 const apiSettings = reactive({
   endpoint: 'https://api.example.com/v1',
   key: '**********'
-});
+ });
+*/
 
-// Настройки видеозаставки
+/* Настройки видеозаставки
 const videoSettings = reactive({
   videoUrl: '',
   enabled: false,
   timeout: 60
 });
+*/
 
-// Настройки печати
+/* Настройки печати
 const printSettings = reactive({
   printerName: 'Thermal Printer',
   paperSize: '80mm',
@@ -256,8 +265,9 @@ const printSettings = reactive({
   showBarcode: false,
   showFooter: true
 });
+*/
 
-// Настройки смены
+/* Настройки смены
 const shiftSettings = reactive({
   isOpen: false,
   openedAt: null,
@@ -272,6 +282,7 @@ const shiftSettings = reactive({
     salesAmount: 78500
   }
 });
+*/
 
 // Сохранение общих настроек
 const saveGeneralSettings = () => {
@@ -296,28 +307,31 @@ const saveGeneralSettings = () => {
   }
 };
 
-// Сохранение настроек API
+/* Сохранение настроек API
 const saveApiSettings = () => {
   console.log('Настройки API сохранены:', apiSettings);
   // В реальном приложении здесь будет вызов API
   alert('Настройки API сохранены!');
 };
+*/
 
-// Сохранение настроек видеозаставки
+/* Сохранение настроек видеозаставки
 const saveVideoSettings = () => {
   console.log('Настройки видеозаставки сохранены:', videoSettings);
   // В реальном приложении здесь будет вызов API
   alert('Настройки видеозаставки сохранены!');
 };
+*/
 
-// Сохранение настроек печати
+/* Сохранение настроек печати
 const savePrintSettings = () => {
   console.log('Настройки печати сохранены:', printSettings);
   // В реальном приложении здесь будет вызов API
   alert('Настройки печати сохранены!');
 };
+*/
 
-// Переключение статуса смены
+/* Переключение статуса смены
 const toggleShift = () => {
   if (shiftSettings.isOpen) {
     // Закрытие смены
@@ -346,6 +360,7 @@ const toggleShift = () => {
     alert('Смена успешно открыта!');
   }
 };
+*/
 
 // Форматирование даты
 const formatDate = (date) => {
@@ -369,8 +384,8 @@ const isOrgInfoModalVisible = ref(false);
 
 // Обработка события редактирования информации о версии
 function handleEditVersion(data) {
-  // Сохраняем данные для редактирования
-  versionInfo.value = { ...data };
+  // Всегда используем актуальную версию из versionInfo
+  versionInfo.value = { ...versionInfo.value, ...data };
   
   // Закрываем модальное окно просмотра
   isVersionInfoModalVisible.value = false;

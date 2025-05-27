@@ -109,7 +109,7 @@ export async function getOrgInfo() {
  */
 export async function updateVersionInfo(data) {
   try {
-    const response = await axios.post(`${API_BASE_URL}/Version/Update`, data, {
+    const response = await axios.put(`${API_BASE_URL}/Version/Update`, data, {
       headers: getAuthHeaders()
     });
     

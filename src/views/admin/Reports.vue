@@ -27,9 +27,9 @@
       <div class="admin-form-group">
         <label for="reportFormat">Формат отчета:</label>
         <select id="reportFormat" v-model="selectedFormat" class="admin-input">
-          <option value="pdf">PDF</option>
+          <!--<option value="pdf">PDF</option>-->
           <option value="excel">Excel</option>
-          <option value="csv">CSV</option>
+          <!--<option value="csv">CSV</option>-->
         </select>
       </div>
 
@@ -239,19 +239,20 @@ function generateExcel(data, fileName) {
   }
   
   try {
-    // Создаем CSV строку
+    // Для корректного открытия CSV в Excel в русской локали используем точку с запятой как разделитель
+    // Это предотвращает склеивание всех данных в одну ячейку
     const headers = Object.keys(data[0]);
-    let csvContent = headers.join(',') + '\n';
+    let csvContent = headers.join(';') + '\n';
     
     // Добавляем строки данных
     data.forEach(item => {
       const row = headers.map(header => {
-        // Экранируем кавычки и оборачиваем значение в кавычки, если оно содержит запятую
+        // Экранируем кавычки и оборачиваем значение в кавычки, если оно содержит точку с запятой
         const value = String(item[header] || '');
         const escapedValue = value.replace(/"/g, '""');
-        return value.includes(',') ? `"${escapedValue}"` : escapedValue;
+        return value.includes(';') ? `"${escapedValue}"` : escapedValue;
       });
-      csvContent += row.join(',') + '\n';
+      csvContent += row.join(';') + '\n';
     });
     
     // Создаем Blob и ссылку для скачивания
