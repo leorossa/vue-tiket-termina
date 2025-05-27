@@ -187,11 +187,9 @@ function openCreateSimpleServiceModal() {
   // Создаем простую услугу с предустановленными параметрами
   currentService.value = {
     // Предустановленный флаг "Требуется дата посещения"
-    NeedVisitDate: true,
+    IsNeedVisitDate: true,
     // Скрываем остальные флаги и поля
-    NeedVisitTime: false,
-    NeedPeriod: false,
-    NeedProCulture: false,
+    IsNeedVisitTime: false,
     // Устанавливаем тип услуги как простая
     IsSimpleService: true
   };

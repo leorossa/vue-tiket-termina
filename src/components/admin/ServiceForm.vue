@@ -264,7 +264,8 @@ const formData = reactive({
   isCategoryVisitorUseForCost: true,
   isVisitorCountUseForCost: true,
   isUseOneCategory: false,
-  isNeedVisitDate: false,
+  // Для простой услуги всегда устанавливаем дату посещения
+  isNeedVisitDate: props.service && props.service.IsSimpleService ? true : false,
   isNeedVisitTime: false,
   dtBegin: '',
   dtEnd: '',
@@ -291,7 +292,8 @@ watch(() => props.service, (newService) => {
       isCategoryVisitorUseForCost: newService.IsCategoryVisitorUseForCost || false,
       isVisitorCountUseForCost: newService.IsVisitorCountUseForCost || false,
       isUseOneCategory: newService.IsUseOneCategory || false,
-      isNeedVisitDate: newService.IsNeedVisitDate || false,
+      // Для простой услуги всегда устанавливаем дату посещения
+      isNeedVisitDate: newService.IsSimpleService ? true : (newService.IsNeedVisitDate || false),
       isNeedVisitTime: newService.IsNeedVisitTime || false,
       dtBegin: formatDateForInput(newService.DtBegin || newService.dtBegin) || '',
       dtEnd: formatDateForInput(newService.DtEnd || newService.dtEnd) || '',
@@ -319,6 +321,11 @@ watch(() => props.service, (newService) => {
 // Функция сохранения услуги
 function saveService() {
   try {
+    // Если это простая услуга, убедимся что флаг IsNeedVisitDate установлен
+    if (isSimpleService.value) {
+      formData.isNeedVisitDate = true;
+    }
+    
     // Подготовка данных для сохранения
     // Создаем объект с учетом структуры DTO на бэкенде
     const serviceData = {
@@ -342,13 +349,16 @@ function saveService() {
       IsCategoryVisitorUseForCost: formData.isCategoryVisitorUseForCost,
       IsVisitorCountUseForCost: formData.isVisitorCountUseForCost,
       IsUseOneCategory: formData.isUseOneCategory,
-      // Сохраняем флаг простой услуги
-      IsSimpleService: isSimpleService.value,
       // Связанные объекты
       VisitObject: selectedVisitObjects.value,
       CategoryVisitor: selectedCategoryVisitors.value,
       Price: selectedPrices.value
     };
+    
+    // Дополнительная проверка для простой услуги
+    if (serviceData.IsSimpleService) {
+      serviceData.IsNeedVisitDate = true;
+    }
     
     console.log('Отправка данных услуги:', serviceData);
     
