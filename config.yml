@@ -1,0 +1,16 @@
+# Конфигурация приложения
+
+# Настройки для разработки
+development:
+  api:
+    baseUrl: http://localhost:8181
+    basePath: /TLMuseumGate/REST
+
+# Настройки для продакшена
+production:
+  api:
+    baseUrl: http://localhost:3000
+    basePath: /TLMuseumGate/REST
+
+# Текущее окружение (development/production)
+env: production
