@@ -39,6 +39,76 @@ export const useOrderStore = defineStore('order', () => {
       loading.value = false;
     }
   }
+  
+  // Функция для загрузки заказов по дате создания
+  async function fetchOrdersByCreatedAtRange(startDate, endDate) {
+    loading.value = true;
+    error.value = null;
+    try {
+      console.log(`Запрос заказов за период: ${startDate} - ${endDate}`);
+      
+      // Проверяем, является ли это ежедневным отчетом
+      const isDaily = startDate === endDate;
+      
+      // Используем тот же API-метод, но с пометкой, что фильтруем по дате создания
+      const response = await getOrdersByDateRange(startDate, endDate, true);
+      
+      // Получаем заказы из ответа
+      let filteredOrders = response.Order || [];
+      
+      // Дополнительная фильтрация на стороне клиента для ежедневных отчетов
+      if (isDaily && filteredOrders.length > 0) {
+        console.log('Дополнительная фильтрация для ежедневного отчета');
+        
+        // Парсим дату отчета
+        const reportDate = new Date(startDate);
+        const reportDay = reportDate.getDate();
+        const reportMonth = reportDate.getMonth();
+        const reportYear = reportDate.getFullYear();
+        
+        // Фильтруем заказы строго по дате создания
+        filteredOrders = filteredOrders.filter(order => {
+          // Проверяем дату в услугах
+          if (order.Service && order.Service.length > 0 && order.Service[0].DtVisit) {
+            const orderDateStr = order.Service[0].DtVisit;
+            let orderDate;
+            
+            // Парсим дату с учетом возможных форматов
+            try {
+              if (orderDateStr.includes(':')) {
+                // Формат с временем (2025-05-27 21:07)
+                orderDate = new Date(orderDateStr.replace(' ', 'T'));
+              } else {
+                // Только дата (2025-05-27)
+                orderDate = new Date(orderDateStr);
+              }
+              
+              // Проверяем совпадение дня, месяца и года
+              const isSameDay = orderDate.getDate() === reportDay && 
+                               orderDate.getMonth() === reportMonth && 
+                               orderDate.getFullYear() === reportYear;
+              
+              console.log(`Заказ ID:${order.Id}, Дата:${orderDateStr}, Совпадает с ${startDate}: ${isSameDay}`);
+              
+              return isSameDay;
+            } catch (e) {
+              console.error('Ошибка при парсинге даты:', orderDateStr, e);
+              return false;
+            }
+          }
+          return false;
+        });
+      }
+      
+      orders.value = filteredOrders;
+      console.log('Загружены заказы по дате создания:', orders.value.length);
+    } catch (err) {
+      console.error('Ошибка при загрузке заказов по дате создания:', err);
+      error.value = 'Не удалось загрузить заказы. Пожалуйста, попробуйте позже.';
+    } finally {
+      loading.value = false;
+    }
+  }
 
   async function fetchOrderById(orderId) {
     loading.value = true;
@@ -106,6 +176,7 @@ export const useOrderStore = defineStore('order', () => {
     
     // Действия
     fetchOrdersByDateRange,
+    fetchOrdersByCreatedAtRange,
     fetchOrderById,
     updateOrderStatusLocally,
     removeOrderLocally,

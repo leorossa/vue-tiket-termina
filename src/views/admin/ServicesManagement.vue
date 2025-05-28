@@ -202,6 +202,18 @@ async function editService(service) {
   try {
     // Загружаем полные данные услуги перед редактированием
     const fullService = await serviceStore.getServiceById(service.ServiceId);
+    
+    // Проверяем, является ли пользователь root-пользователем
+    if (!userStore.hasRootAccess) {
+      // Для обычных пользователей устанавливаем флаг IsSimpleService = true
+      fullService.IsSimpleService = true;
+      // Устанавливаем флаг даты посещения
+      fullService.IsNeedVisitDate = true;
+      console.log('Открытие формы простого редактирования услуги');
+    } else {
+      console.log('Открытие формы полного редактирования услуги');
+    }
+    
     currentService.value = fullService;
     isEditing.value = true;
     showServiceModal.value = true;
@@ -272,6 +284,7 @@ async function deleteService() {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   line-height: 1.4;
 }

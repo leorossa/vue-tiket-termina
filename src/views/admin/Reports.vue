@@ -145,10 +145,25 @@ async function generateReport() {
     
     switch (selectedReportType.value) {
       case 'daily':
-        startDateObj = new Date(now.setHours(0, 0, 0, 0));
-        endDateObj = new Date(now);
-        endDateObj.setHours(23, 59, 59, 999);
-        periodText = startDateObj.toLocaleDateString('ru-RU');
+        // Для ежедневного отчета используем текущую дату
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate();
+        
+        // Формируем текст периода
+        periodText = `${today.toLocaleDateString('ru-RU')}`;
+        
+        // Устанавливаем начало текущего дня
+        startDateObj = new Date(year, month, day, 0, 0, 0, 0);
+        
+        // Устанавливаем конец текущего дня
+        endDateObj = new Date(year, month, day, 23, 59, 59, 999);
+        
+        console.log('Формирование ежедневного отчета за текущий день:', 
+                  today.toLocaleDateString('ru-RU'), 
+                  '\nДаты в ISO формате:', 
+                  startDateObj.toISOString(), 'по', endDateObj.toISOString());
         break;
       case 'weekly':
         startDateObj = new Date(now);
@@ -167,6 +182,14 @@ async function generateReport() {
         periodText = `${startDateObj.toLocaleDateString('ru-RU')} - ${endDateObj.toLocaleDateString('ru-RU')}`;
         break;
       case 'custom':
+        // Для произвольного периода используем даты, выбранные пользователем
+        if (!startDate.value || !endDate.value) {
+          alert('Пожалуйста, укажите начальную и конечную даты');
+          loading.value = false;
+          return;
+        }
+        
+        // Парсим даты из инпутов
         startDateObj = new Date(startDate.value);
         startDateObj.setHours(0, 0, 0, 0);
         endDateObj = new Date(endDate.value);
@@ -179,20 +202,43 @@ async function generateReport() {
     const formattedStartDate = startDateObj.toISOString().split('T')[0];
     const formattedEndDate = endDateObj.toISOString().split('T')[0];
     
+    // Формируем строки дат для запроса
+    let formattedStartDateStr, formattedEndDateStr;
+    
+    // Обрабатываем даты в зависимости от типа отчета
+    if (selectedReportType.value === 'daily') {
+      // Для ежедневного отчета используем текущую дату
+      const today = new Date();
+      formattedStartDateStr = today.toISOString().split('T')[0];
+      formattedEndDateStr = formattedStartDateStr;
+    } else {
+      // Для остальных типов отчетов используем даты из формы
+      formattedStartDateStr = formattedStartDate;
+      formattedEndDateStr = formattedEndDate;
+    }
+    
+    console.log(`Формирование отчета ${selectedReportType.value} за период: ${formattedStartDateStr} - ${formattedEndDateStr}`);
+    
     // Получаем данные для отчета (в данном случае заказы)
-    await orderStore.fetchOrdersByDateRange(formattedStartDate, formattedEndDate);
+    // Используем только дату создания заказа для фильтрации
+    await orderStore.fetchOrdersByCreatedAtRange(formattedStartDateStr, formattedEndDateStr);
     
     // Подготавливаем данные для отчета
-    reportData.value = orderStore.orders.map(order => ({
-      'ID заказа': order.Id,
-      'Штрих-код': order.OrderBarcode,
-      'Имя': order.VisitorName1,
-      'Фамилия': order.VisitorName2,
-      'Телефон': order.VisitorPhone,
-      'Статус': getOrderStatusName(order.OrderStateId),
-      'Стоимость': order.Cost,
-      'Дата создания': formatDate(order.CreatedAt)
-    }));
+    reportData.value = orderStore.orders.map(order => {
+      // Получаем дату создания из первой услуги, если она есть
+      const orderDate = order.Service && order.Service.length > 0 ? order.Service[0].DtVisit : order.CreatedAt;
+      
+      return {
+        'ID заказа': order.Id,
+        'Штрих-код': order.OrderBarcode,
+        'Имя': order.VisitorName1,
+        'Фамилия': order.VisitorName2,
+        'Телефон': order.VisitorPhone,
+        'Статус': getOrderStatusName(order.OrderStateId),
+        'Стоимость': order.Cost,
+        'Дата создания заказа': formatDate(orderDate)
+      };
+    });
     
     // Если выбран Excel, генерируем его на фронтенде
     if (selectedFormat.value === 'excel') {

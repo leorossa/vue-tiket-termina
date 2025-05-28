@@ -97,6 +97,12 @@
                 {{ sortDirection === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
+            <th @click="sortBy('DtVisit')" class="sortable">
+              Дата создания
+              <span v-if="sortColumn === 'DtVisit'" class="sort-icon">
+                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              </span>
+            </th>
             <th>Действия</th>
           </tr>
         </thead>
@@ -118,29 +124,32 @@
               </span>
             </td>
             <td>{{ formatCurrency(order.Cost) }}</td>
+            <td>{{ getOrderDate(order) }}</td>
             <td class="admin-actions">
-              <button 
-                @click="viewOrderDetails(order)" 
-                class="admin-button sm secondary"
-                title="Просмотр деталей"
-              >
-                👁️
-              </button>
-              <button 
-                @click="openStatusModal(order)" 
-                class="admin-button sm primary"
-                title="Изменить статус (локально)"
-              >
-                📝
-              </button>
-              <button 
-                @click="confirmCancelOrder(order)" 
-                class="admin-button sm danger"
-                title="Удалить из списка (локально)"
-                :disabled="order.OrderStateId === 2 || order.OrderStateId === 3"
-              >
-                ❌
-              </button>
+              <div class="button-container">
+                <button 
+                  @click.stop="viewOrderDetails(order)" 
+                  class="admin-button sm secondary"
+                  title="Просмотр деталей"
+                >
+                  👁️
+                </button>
+                <button 
+                  @click.stop="openStatusModal(order)" 
+                  class="admin-button sm primary"
+                  title="Изменить статус (локально)"
+                >
+                  📝
+                </button>
+                <button 
+                  @click.stop="confirmCancelOrder(order)" 
+                  class="admin-button sm danger"
+                  title="Удалить из списка (локально)"
+                  :disabled="order.OrderStateId === 2 || order.OrderStateId === 3"
+                >
+                  ❌
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -221,7 +230,7 @@
                       <span class="admin-info-value">{{ service.ServiceName }}</span>
                     </div>
                     <div class="admin-info-item">
-                      <span class="admin-info-label">Дата посещения:</span>
+                      <span class="admin-info-label">Дата создания заказа:</span>
                       <span class="admin-info-value">{{ formatDateTime(service.DtVisit) }}</span>
                     </div>
                     <div class="admin-info-item">
@@ -359,11 +368,39 @@ const statusOptions = {
 
 // Загрузка заказов
 async function loadOrders() {
-  await orderStore.fetchOrdersByDateRange(dateRange.value.start, dateRange.value.end);
+  try {
+    // Проверяем корректность дат
+    if (!dateRange.value.start || !dateRange.value.end) {
+      alert('Пожалуйста, укажите начальную и конечную даты');
+      return;
+    }
+    
+    // Проверяем, что начальная дата не позже конечной
+    const startDate = new Date(dateRange.value.start);
+    const endDate = new Date(dateRange.value.end);
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      alert('Указаны некорректные даты');
+      return;
+    }
+    
+    if (startDate > endDate) {
+      alert('Начальная дата не может быть позже конечной');
+      return;
+    }
+    
+    console.log(`Загрузка заказов за период: ${dateRange.value.start} - ${dateRange.value.end}`);
+    await orderStore.fetchOrdersByCreatedAtRange(dateRange.value.start, dateRange.value.end);
+  } catch (error) {
+    console.error('Ошибка при загрузке заказов:', error);
+    alert(`Ошибка при загрузке заказов: ${error.message || error}`);
+  }
 }
 
 // Фильтрация и сортировка заказов
 const filteredOrders = computed(() => {
+  if (!orderStore.orders) return [];
+  
   let result = [...orderStore.orders];
   
   // Фильтрация по поисковому запросу
@@ -434,15 +471,85 @@ function formatCurrency(value) {
 function formatDateTime(dateTimeString) {
   if (!dateTimeString) return 'Не указано';
   
-  const date = new Date(dateTimeString);
-  
-  return new Intl.DateTimeFormat('ru-RU', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date);
+  try {
+    let date;
+    
+    // Обработка различных форматов дат
+    if (typeof dateTimeString === 'string') {
+      if (dateTimeString.includes(' ')) {
+        // Формат "2023-05-27 21:07:00"
+        date = new Date(dateTimeString.replace(' ', 'T'));
+      } else if (dateTimeString.includes('T')) {
+        // Формат ISO "2023-05-27T21:07:00"
+        date = new Date(dateTimeString);
+      } else if (dateTimeString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // Формат только даты "2023-05-27"
+        date = new Date(`${dateTimeString}T00:00:00`);
+      } else if (dateTimeString.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+        // Формат даты в русском стиле "27.05.2023"
+        const [day, month, year] = dateTimeString.split('.');
+        date = new Date(`${year}-${month}-${day}T00:00:00`);
+      } else {
+        // Пробуем парсить как есть
+        date = new Date(dateTimeString);
+      }
+    } else {
+      // Если это уже объект Date или timestamp
+      date = new Date(dateTimeString);
+    }
+    
+    if (isNaN(date.getTime())) {
+      console.error('Невалидная дата:', dateTimeString);
+      return 'Некорректная дата';
+    }
+    
+    return new Intl.DateTimeFormat('ru-RU', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  } catch (error) {
+    console.error('Ошибка при форматировании даты:', dateTimeString, error);
+    return 'Некорректная дата';
+  }
+}
+
+// Получение даты заказа для отображения в таблице
+function getOrderDate(order) {
+  try {
+    // Проверяем наличие заказа
+    if (!order) {
+      console.error('Передан пустой заказ');
+      return 'Не указано';
+    }
+    
+    // Если есть услуги, берем дату из первой услуги
+    if (order.Service && Array.isArray(order.Service) && order.Service.length > 0) {
+      const service = order.Service[0];
+      if (service.DtVisit) {
+        return formatDateTime(service.DtVisit);
+      }
+    }
+    
+    // Если есть поле DtVisit в самом заказе
+    if (order.DtVisit) {
+      return formatDateTime(order.DtVisit);
+    }
+    
+    // Если есть поле CreatedAt
+    if (order.CreatedAt) {
+      return formatDateTime(order.CreatedAt);
+    }
+    
+    // Если ничего не нашли
+    console.log('Не найдена дата для заказа:', order.Id);
+    return 'Не указано';
+  } catch (error) {
+    console.error('Ошибка при получении даты заказа:', error);
+    return 'Ошибка даты';
+  }
 }
 
 // Просмотр деталей заказа
@@ -602,7 +709,14 @@ onMounted(() => {
 
 .admin-actions {
   display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.button-container {
+  display: flex;
   gap: 0.5rem;
+  justify-content: center;
 }
 
 .status-badge {

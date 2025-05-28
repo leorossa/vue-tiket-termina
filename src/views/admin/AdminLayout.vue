@@ -141,6 +141,11 @@ const currentUser = computed(() => {
 // Проверка, является ли пользователь root-пользователем
 const isRootUser = computed(() => userStore.hasRootAccess);
 
+// Проверка, имеет ли пользователь права администратора
+const hasAdminAccess = computed(() => {
+  return currentUser.value && currentUser.value.Role === 'ADMIN';
+});
+
 // Функция проверки прав доступа
 function hasPermission(permission) {
   return userStore.hasPermission(permission) || isRootUser.value;
