@@ -3,7 +3,8 @@ import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
 
 // Базовый URL API
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.PROD ? '/TLMuseumGate/REST' : '/api';
+
 
 // Функция для получения заголовков авторизации
 const getAuthHeaders = () => {

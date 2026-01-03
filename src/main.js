@@ -19,3 +19,5 @@ app.use(router)
 
 // Монтирование приложения
 app.mount('#app')
+
+console.log('PROD?', import.meta.env.PROD);

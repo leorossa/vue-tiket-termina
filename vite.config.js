@@ -30,34 +30,30 @@ const config = loadConfig();
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // Загружаем переменные окружения
   const env = loadEnv(mode, process.cwd(), '');
 
+  const isProd = mode === 'production';
+  const apiBaseUrl = isProd ? '' : (env.VITE_API_BASE_URL || config.api.baseUrl);
+  const apiBasePath = env.VITE_API_BASE_PATH || config.api.basePath;
+
   return {
+    base: './',
     plugins: [vue()],
-    resolve: {
-      alias: {
-        '@': '/src' // Настройка алиаса для удобного импорта
-      }
-    },
+    resolve: { alias: { '@': '/src' } },
     server: {
       port: 3000,
       proxy: {
-        // Проксирование API-запросов на бэкенд
         '/api': {
-          target: env.VITE_API_BASE_URL || config.api.baseUrl,
+          target: apiBaseUrl || 'http://localhost:8181',
           changeOrigin: true,
-          rewrite: (path) => path.replace(
-            /^\/api/, 
-            env.VITE_API_BASE_PATH || config.api.basePath
-          )
+          rewrite: (path) => path.replace(/^\/api/, apiBasePath)
         }
       }
     },
     define: {
       'import.meta.env.APP_CONFIG': JSON.stringify(config),
-      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL || config.api.baseUrl),
-      'import.meta.env.VITE_API_BASE_PATH': JSON.stringify(env.VITE_API_BASE_PATH || config.api.basePath)
+      'import.meta.env.VITE_API_BASE_URL': JSON.stringify(apiBaseUrl),
+      'import.meta.env.VITE_API_BASE_PATH': JSON.stringify(apiBasePath)
     }
   };
 });

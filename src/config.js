@@ -1,7 +1,10 @@
 // Конфигурация приложения
 
 // Базовый URL API
-export const API_BASE_URL = '/api'; // Будет настроен через прокси в vite.config.js
+export const API_BASE_URL = import.meta.env.PROD
+    ? '/TLMuseumGate/REST'
+    : '/api';
+ // Будет настроен через прокси в vite.config.js
 
 // Другие константы конфигурации
 export const APP_NAME = 'Система продажи билетов';
